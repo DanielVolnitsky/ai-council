@@ -1,0 +1,22 @@
+# pyproject.toml for the LangGraph-based FastAPI backend.
+#
+# Mirrors the LiteLLM backend structure. Same API contract, different
+# orchestration internals. LangGraph dependencies will be added when
+# that backend is implemented (Phase 3).
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "council-langgraph"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "council-core",
+]
+
+[tool.uv.sources]
+council-core = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["council_langgraph"]

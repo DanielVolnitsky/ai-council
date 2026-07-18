@@ -1,0 +1,13 @@
+# Model Council configuration.
+# Add/remove/disable models here without touching any Python code.
+#
+# `default_synthesizer` is the model used to merge all responses into the
+# structured analysis document when the caller does not specify one.
+default_synthesizer: openai/gpt-4o
+
+models:
+  - id: openai/gpt-4o        # Used as the unique key throughout the system
+    provider: openai
+    api_key_env: OPENAI_API_KEY   # Name of the env var that holds the key
+    enabled: true
+

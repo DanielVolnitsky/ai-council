@@ -1,0 +1,25 @@
+# pyproject.toml for the LiteLLM-based FastAPI backend.
+#
+# This package depends on council-core (the shared library) and will add
+# litellm + fastapi as dependencies when those modules are implemented.
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "council-litellm"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    # Workspace dependency: resolves to the local `core/` package rather than
+    # fetching from PyPI. Equivalent to a Maven local-module dependency.
+    "council-core",
+]
+
+# [tool.uv.sources] is where uv-specific source overrides live.
+# `workspace = true` means "find this package inside the uv workspace, not PyPI."
+[tool.uv.sources]
+council-core = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["council_litellm"]

@@ -1,0 +1,24 @@
+# pyproject.toml for the `council-core` package.
+#
+# This is the shared library — config loader, DB layer, shared types.
+# Both backends declare it as a dependency so they can import from `core.*`.
+#
+# [build-system] tells uv/pip how to build this package into a wheel.
+# hatchling is uv's default build backend (like Maven's default packaging plugin).
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "council-core"
+version = "0.1.0"
+requires-python = ">=3.12"
+# Dependencies will be added here as each module is implemented
+# (e.g. pydantic, pyyaml, aiosqlite).
+dependencies = []
+
+# [tool.hatch.build.targets.wheel] tells hatchling which directory contains
+# the Python source to package. The directory name here ("core") becomes the
+# importable package name: `from core.config import ...`
+[tool.hatch.build.targets.wheel]
+packages = ["core"]

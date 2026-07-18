@@ -1,0 +1,24 @@
+# Root pyproject.toml — uv workspace root.
+#
+# Analogy for Java engineers: this is the parent pom.xml (Maven multi-module) or
+# the root settings.gradle (Gradle multi-project). It does not define a runnable
+# package itself — it just tells uv "these sub-directories are workspace members
+# that should all share the same virtual environment and lockfile."
+#
+# uv resolves all members' dependencies together into a single .venv at the
+# workspace root, similar to how Gradle composite builds share a dependency cache.
+
+[project]
+name = "ai-council"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+# [tool.uv.workspace] is the uv-specific section that declares which
+# sub-directories are workspace members. Each member must have its own
+# pyproject.toml. Glob patterns are supported (e.g. "backends/*").
+[tool.uv.workspace]
+members = [
+    "core",
+    "backends/litellm",
+    "backends/langgraph",
+]
