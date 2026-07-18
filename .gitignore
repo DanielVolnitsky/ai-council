@@ -57,3 +57,6 @@ docker-data/
 # OS
 .DS_Store
 Thumbs.db
+
+# Specs
+specs/
