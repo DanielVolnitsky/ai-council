@@ -13,9 +13,11 @@ build-backend = "hatchling.build"
 name = "council-core"
 version = "0.1.0"
 requires-python = ">=3.12"
-# Dependencies will be added here as each module is implemented
-# (e.g. pydantic, pyyaml, aiosqlite).
-dependencies = []
+dependencies = [
+    "pydantic>=2.0",   # Data validation / serialisation — used for CouncilSynthesis, CouncilResult, and config models
+    "pyyaml>=6.0",     # YAML parsing for config.yaml
+    "asyncpg>=0.29",   # Async PostgreSQL driver — pure Python, no libpq required
+]
 
 # [tool.hatch.build.targets.wheel] tells hatchling which directory contains
 # the Python source to package. The directory name here ("core") becomes the

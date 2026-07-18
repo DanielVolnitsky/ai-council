@@ -22,3 +22,17 @@ members = [
     "backends/litellm",
     "backends/langgraph",
 ]
+
+# Dev tools live at the workspace root so `uv sync --group dev` from the
+# repo root installs them for all members.  Individual members do not need
+# their own dev groups.
+[dependency-groups]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+]
+
+# Tell pytest-asyncio to treat all `async def test_*` functions as async tests
+# without requiring an explicit @pytest.mark.asyncio decorator on each one.
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

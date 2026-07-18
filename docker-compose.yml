@@ -1,0 +1,37 @@
+# docker-compose.yml
+#
+# Runs the infrastructure services for local development.
+# Start with: docker compose up -d
+#
+# Services defined here:
+#   db  — PostgreSQL for the council application (sessions, responses, syntheses)
+#
+# Planned additions (Phase 6):
+#   langfuse  — self-hosted LLM tracing UI
+#   langfuse-db — dedicated PostgreSQL for Langfuse's own metadata
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: council          # Main application database
+      POSTGRES_USER: council
+      POSTGRES_PASSWORD: council    # Fine for local-only use; change for any shared env
+    ports:
+      - "5432:5432"                 # Expose to host so backends and tests can connect
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # init.sql is executed once when the container is first created.
+      # It creates the council_test database used by the test suite.
+      # If you ever need to re-run it, remove the volume: docker compose down -v
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U council -d council"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+    # Named volume — data persists across `docker compose down` and `up` cycles.
+    # To wipe all data and start fresh: docker compose down -v
