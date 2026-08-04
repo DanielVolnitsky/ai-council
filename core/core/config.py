@@ -25,8 +25,8 @@ class ModelConfig(BaseModel):
     Configuration for one LLM model as declared in config.yaml.
 
     `id` is the unique key used throughout the system (e.g. "openai/gpt-4o").
-    LiteLLM uses this exact "<provider>/<model>" format for routing, so the
-    config id doubles as the LiteLLM model name — no translation needed.
+    LangChain's init_chat_model resolves this exact "<provider>/<model>" format,
+    so the config id doubles as the model name — no translation needed.
 
     `api_key_env` is the *name* of the environment variable that holds the
     API key (e.g. "OPENAI_API_KEY"), not the key itself.  The backend reads

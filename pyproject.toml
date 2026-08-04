@@ -19,7 +19,6 @@ requires-python = ">=3.12"
 [tool.uv.workspace]
 members = [
     "core",
-    "backends/litellm",
     "backends/langgraph",
 ]
 

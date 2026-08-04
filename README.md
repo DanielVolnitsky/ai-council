@@ -21,13 +21,12 @@ A multimodel deliberation tool that sends your question to N language models fro
 
 ## Architecture
 
-Monorepo with two backend implementations sharing a common core:
+Monorepo with a LangGraph backend sharing a common core:
 
 ```
 core/              # Shared: models, DB, config, synthesis prompt
 backends/
-  litellm/         # Implementation A: LiteLLM + custom async logic
-  langgraph/       # Implementation B: LangGraph orchestration
+  langgraph/       # LangGraph orchestration
 frontend/          # React (Vite) SPA
 ```
 
@@ -37,7 +36,7 @@ frontend/          # React (Vite) SPA
 |-------|-----------|
 | Frontend | React + Vite |
 | Backend | FastAPI (Python) |
-| Provider abstraction | LiteLLM / LangGraph |
+| Provider abstraction | LangGraph |
 | Streaming | SSE (Server-Sent Events) |
 | Persistence | SQLite |
 | Config | YAML |
@@ -62,7 +61,7 @@ Client-agnostic REST API designed for reuse by future clients (Telegram bot, mob
 
 - **Parallel async execution** — all models queried concurrently; partial failures are tolerated (continue with available responses)
 - **Configurable synthesizer** — any model can be the synthesizer, user picks via config
-- **Two implementations** — LiteLLM (minimal, DIY) vs LangGraph (framework-based) for comparison and learning goals
+- **LangGraph orchestration** — a single framework-based backend; provider fan-out and synthesis are modelled as graph nodes
 - **Single-user, local-only** for MVP
 - **Question-only input** for MVP (no file attachments or system prompts)
 

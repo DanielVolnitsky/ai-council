@@ -7,7 +7,6 @@ members = [
     "ai-council",
     "council-core",
     "council-langgraph",
-    "council-litellm",
 ]
 
 [[package]]
@@ -108,17 +107,6 @@ requires-dist = [
 name = "council-langgraph"
 version = "0.1.0"
 source = { editable = "backends/langgraph" }
-dependencies = [
-    { name = "council-core" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "council-core", editable = "core" }]
-
-[[package]]
-name = "council-litellm"
-version = "0.1.0"
-source = { editable = "backends/litellm" }
 dependencies = [
     { name = "council-core" },
 ]
