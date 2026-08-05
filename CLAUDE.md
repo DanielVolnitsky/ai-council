@@ -10,6 +10,7 @@
 - Use the domain vocabulary consistently: in this codebase "agent" not "bot".
 
 ### Types
+- Annotate every local variable binding with its type, even when the type is already inferable: `chat_model: BaseChatModel = build_chat_model(model_config)`, not `chat_model = build_chat_model(model_config)`. The type is then readable at the use site without chasing the callee's signature. The only exclusions are bindings Python cannot annotate inline: `for` targets, comprehension variables, `with ... as`, and `except ... as`.
 - No bare list[dict] or dict in function signatures or local annotations — every dict boundary gets a named TypedDict.
 - Use NamedTuple for small value objects returned from internal helpers (e.g. subprocess results) — named fields beat positional tuple[int, str, str].
 - Avoid redundant wrapper types: if a TypedDict would only name 1–2 fields of a large external payload and add no real signal, keep dict rather than creating noise.
