@@ -3,7 +3,7 @@
 # Fan-out: ask every enabled council model the same question, concurrently.
 #
 # Provider abstraction:
-#   LangChain's init_chat_model() resolves a "<provider>/<model>" string into
+#   LangChain's init_chat_model() resolves a "<provider>:<model>" string into
 #   the right chat model class (ChatOpenAI, ChatAnthropic, ChatOllama, ...).
 #   ModelConfig.id is already in that exact format, so the config id is passed
 #   straight through — no provider lookup table needed here.
@@ -115,16 +115,10 @@ async def _ask_model(model_config: ModelConfig, question: str) -> ModelResponse:
     return ModelResponse(model_id=model_config.id, response=_response_text(message))
 
 
-async def run_fanout(config: CouncilConfig, question: str) -> list[ModelResponse]:
+async def fanout_question(config: CouncilConfig, question: str) -> list[ModelResponse]:
     """
     Ask every enabled model the question concurrently.
-
-    Returns one ModelResponse per enabled model, in config order — asyncio.gather
-    preserves the order of the awaitables it was given regardless of completion
-    order.  Disabled models are absent from the result entirely.
     """
-    return list(
-        await asyncio.gather(
-            *(_ask_model(model_config, question) for model_config in config.enabled_models)
-        )
+    return await asyncio.gather(
+        *(_ask_model(model_config, question) for model_config in config.enabled_models)
     )

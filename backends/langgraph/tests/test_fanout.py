@@ -22,11 +22,11 @@ from core.types import ModelResponse
 # ---------------------------------------------------------------------------
 
 CONFIG: CouncilConfig = CouncilConfig(
-    default_synthesizer="openai/gpt-4o",
+    default_synthesizer="openai:gpt-4o",
     models=[
-        ModelConfig(id="openai/gpt-4o", provider="openai", api_key_env="OPENAI_API_KEY"),
-        ModelConfig(id="anthropic/claude-sonnet-4-6", provider="anthropic", api_key_env="ANTHROPIC_API_KEY"),
-        ModelConfig(id="ollama/llama3", provider="ollama", base_url="http://localhost:11434", enabled=False),
+        ModelConfig(id="openai:gpt-4o", api_key_env="OPENAI_API_KEY"),
+        ModelConfig(id="anthropic:claude-sonnet-5", api_key_env="ANTHROPIC_API_KEY"),
+        ModelConfig(id="ollama:llama3", base_url="http://localhost:11434", enabled=False),
     ],
 )
 
@@ -78,15 +78,15 @@ async def test_fanout_returns_one_response_per_enabled_model(monkeypatch):
     absent from the result.  Responses come back in config order.
     """
     monkeypatch.setattr(fanout, "build_chat_model", stub_builder({
-        "openai/gpt-4o": StubChatModel(AIMessage(content="gpt says yes")),
-        "anthropic/claude-sonnet-4-6": StubChatModel(AIMessage(content="claude says no")),
+        "openai:gpt-4o": StubChatModel(AIMessage(content="gpt says yes")),
+        "anthropic:claude-sonnet-5": StubChatModel(AIMessage(content="claude says no")),
     }))
 
-    responses: list[ModelResponse] = await fanout.run_fanout(CONFIG, "is it worth it?")
+    responses: list[ModelResponse] = await fanout.fanout_question(CONFIG, "is it worth it?")
 
     assert responses == [
-        ModelResponse(model_id="openai/gpt-4o", response="gpt says yes", error=None),
-        ModelResponse(model_id="anthropic/claude-sonnet-4-6", response="claude says no", error=None),
+        ModelResponse(model_id="openai:gpt-4o", response="gpt says yes", error=None),
+        ModelResponse(model_id="anthropic:claude-sonnet-5", response="claude says no", error=None),
     ]
 
 
@@ -96,15 +96,15 @@ async def test_failing_model_does_not_abort_the_others(monkeypatch):
     the surviving model's answer is still returned.
     """
     monkeypatch.setattr(fanout, "build_chat_model", stub_builder({
-        "openai/gpt-4o": StubChatModel(error=TimeoutError("request timed out")),
-        "anthropic/claude-sonnet-4-6": StubChatModel(AIMessage(content="claude says no")),
+        "openai:gpt-4o": StubChatModel(error=TimeoutError("request timed out")),
+        "anthropic:claude-sonnet-5": StubChatModel(AIMessage(content="claude says no")),
     }))
 
-    responses: list[ModelResponse] = await fanout.run_fanout(CONFIG, "is it worth it?")
+    responses: list[ModelResponse] = await fanout.fanout_question(CONFIG, "is it worth it?")
 
     assert responses == [
-        ModelResponse(model_id="openai/gpt-4o", response="", error="TimeoutError: request timed out"),
-        ModelResponse(model_id="anthropic/claude-sonnet-4-6", response="claude says no", error=None),
+        ModelResponse(model_id="openai:gpt-4o", response="", error="TimeoutError: request timed out"),
+        ModelResponse(model_id="anthropic:claude-sonnet-5", response="claude says no", error=None),
     ]
 
 
@@ -114,19 +114,19 @@ async def test_block_style_content_is_flattened_to_text(monkeypatch):
     Only the text blocks survive; non-text blocks are dropped.
     """
     monkeypatch.setattr(fanout, "build_chat_model", stub_builder({
-        "openai/gpt-4o": StubChatModel(AIMessage(content=[
+        "openai:gpt-4o": StubChatModel(AIMessage(content=[
             {"type": "text", "text": "first part "},
             {"type": "image_url", "image_url": {"url": "http://example.com/x.png"}},
             {"type": "text", "text": "second part"},
         ])),
-        "anthropic/claude-sonnet-4-6": StubChatModel(AIMessage(content="")),
+        "anthropic:claude-sonnet-5": StubChatModel(AIMessage(content="")),
     }))
 
-    responses: list[ModelResponse] = await fanout.run_fanout(CONFIG, "is it worth it?")
+    responses: list[ModelResponse] = await fanout.fanout_question(CONFIG, "is it worth it?")
 
     assert responses == [
-        ModelResponse(model_id="openai/gpt-4o", response="first part second part", error=None),
-        ModelResponse(model_id="anthropic/claude-sonnet-4-6", response="", error=None),
+        ModelResponse(model_id="openai:gpt-4o", response="first part second part", error=None),
+        ModelResponse(model_id="anthropic:claude-sonnet-5", response="", error=None),
     ]
 
 
@@ -144,9 +144,9 @@ def test_build_chat_model_reads_api_key_from_env(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test-123")
     monkeypatch.setattr(fanout, "init_chat_model", fake_init_chat_model)
 
-    fanout.build_chat_model(ModelConfig(id="openai/gpt-4o", provider="openai", api_key_env="OPENAI_API_KEY"))
+    fanout.build_chat_model(ModelConfig(id="openai:gpt-4o", api_key_env="OPENAI_API_KEY"))
 
-    assert captured == {"model_id": "openai/gpt-4o", "api_key": "sk-test-123"}
+    assert captured == {"model_id": "openai:gpt-4o", "api_key": "sk-test-123"}
 
 
 def test_build_chat_model_passes_base_url_without_api_key(monkeypatch):
@@ -160,10 +160,10 @@ def test_build_chat_model_passes_base_url_without_api_key(monkeypatch):
     monkeypatch.setattr(fanout, "init_chat_model", fake_init_chat_model)
 
     fanout.build_chat_model(
-        ModelConfig(id="ollama/llama3", provider="ollama", base_url="http://localhost:11434")
+        ModelConfig(id="ollama:llama3", base_url="http://localhost:11434")
     )
 
-    assert captured == {"model_id": "ollama/llama3", "base_url": "http://localhost:11434"}
+    assert captured == {"model_id": "ollama:llama3", "base_url": "http://localhost:11434"}
 
 
 def test_missing_api_key_env_var_raises(monkeypatch):
@@ -175,5 +175,5 @@ def test_missing_api_key_env_var_raises(monkeypatch):
 
     with pytest.raises(KeyError, match="OPENAI_API_KEY"):
         fanout.build_chat_model(
-            ModelConfig(id="openai/gpt-4o", provider="openai", api_key_env="OPENAI_API_KEY")
+            ModelConfig(id="openai:gpt-4o", api_key_env="OPENAI_API_KEY")
         )

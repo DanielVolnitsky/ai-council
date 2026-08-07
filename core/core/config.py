@@ -24,8 +24,8 @@ class ModelConfig(BaseModel):
     """
     Configuration for one LLM model as declared in config.yaml.
 
-    `id` is the unique key used throughout the system (e.g. "openai/gpt-4o").
-    LangChain's init_chat_model resolves this exact "<provider>/<model>" format,
+    `id` is the unique key used throughout the system (e.g. "openai:gpt-4o").
+    LangChain's init_chat_model parses this exact "<provider>:<model>" format,
     so the config id doubles as the model name — no translation needed.
 
     `api_key_env` is the *name* of the environment variable that holds the
@@ -36,7 +36,6 @@ class ModelConfig(BaseModel):
     `base_url` is only needed for self-hosted providers like Ollama.
     """
     id: str
-    provider: str
     api_key_env: str | None = None   # None for local providers (Ollama)
     base_url: str | None = None      # Override the provider's default endpoint
     enabled: bool = True
@@ -45,10 +44,6 @@ class ModelConfig(BaseModel):
 class CouncilConfig(BaseModel):
     """
     The full configuration loaded from config.yaml.
-
-    `default_synthesizer` must be the id of an enabled model.  The
-    `_synthesizer_must_be_enabled` validator enforces this at load time so
-    the backends can assume it is always valid.
 
     `enabled_models` is a @property (not a stored field) so it is always
     computed from the current `models` list rather than being a stale snapshot.
@@ -94,14 +89,8 @@ def load_config(path: str | Path = "config.yaml") -> CouncilConfig:
         pydantic.ValidationError — if required fields are missing or the
                               default_synthesizer is not in the enabled list.
 
-    All three are programming / deployment errors, not runtime-recoverable
-    states, so they are allowed to propagate to the caller (the backend
-    startup sequence) which will crash-and-log them.
-
     `yaml.safe_load` is used instead of `yaml.load` to prevent arbitrary
     Python object deserialisation from untrusted YAML.
     """
     raw: dict = yaml.safe_load(Path(path).read_text())
-    # model_validate() accepts a plain dict and returns a fully validated
-    # CouncilConfig instance.  Equivalent to Jackson's objectMapper.readValue().
     return CouncilConfig.model_validate(raw)

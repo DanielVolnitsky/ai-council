@@ -19,16 +19,14 @@ from core.config import CouncilConfig, ModelConfig, load_config
 # ---------------------------------------------------------------------------
 
 VALID_YAML = """\
-default_synthesizer: openai/gpt-4o
+default_synthesizer: openai:gpt-4o
 
 models:
-  - id: openai/gpt-4o
-    provider: openai
+  - id: openai:gpt-4o
     api_key_env: OPENAI_API_KEY
     enabled: true
 
-  - id: anthropic/claude-3-5-sonnet-20241022
-    provider: anthropic
+  - id: anthropic:claude-sonnet-5
     api_key_env: ANTHROPIC_API_KEY
     enabled: false
 """
@@ -51,17 +49,15 @@ def test_load_config_returns_valid_config(tmp_path):
     config = load_config(config_file)
 
     assert config == CouncilConfig(
-        default_synthesizer="openai/gpt-4o",
+        default_synthesizer="openai:gpt-4o",
         models=[
             ModelConfig(
-                id="openai/gpt-4o",
-                provider="openai",
+                id="openai:gpt-4o",
                 api_key_env="OPENAI_API_KEY",
                 enabled=True,
             ),
             ModelConfig(
-                id="anthropic/claude-3-5-sonnet-20241022",
-                provider="anthropic",
+                id="anthropic:claude-sonnet-5",
                 api_key_env="ANTHROPIC_API_KEY",
                 enabled=False,
             ),
@@ -76,7 +72,7 @@ def test_enabled_models_excludes_disabled(tmp_path):
 
     config = load_config(config_file)
 
-    assert [m.id for m in config.enabled_models] == ["openai/gpt-4o"]
+    assert [m.id for m in config.enabled_models] == ["openai:gpt-4o"]
 
 
 def test_default_synthesizer_not_in_enabled_raises(tmp_path):
@@ -86,10 +82,9 @@ def test_default_synthesizer_not_in_enabled_raises(tmp_path):
     fail on the first synthesis call.
     """
     yaml_content = """\
-default_synthesizer: openai/gpt-4o
+default_synthesizer: openai:gpt-4o
 models:
-  - id: openai/gpt-4o
-    provider: openai
+  - id: openai:gpt-4o
     enabled: false
 """
     config_file = tmp_path / "config.yaml"
@@ -111,10 +106,9 @@ def test_ollama_model_without_api_key_env_is_valid(tmp_path):
     api_key_env=None must not fail validation.
     """
     yaml_content = """\
-default_synthesizer: ollama/llama3
+default_synthesizer: ollama:llama3
 models:
-  - id: ollama/llama3
-    provider: ollama
+  - id: ollama:llama3
     base_url: http://localhost:11434
     enabled: true
 """
@@ -124,11 +118,10 @@ models:
     config = load_config(config_file)
 
     assert config == CouncilConfig(
-        default_synthesizer="ollama/llama3",
+        default_synthesizer="ollama:llama3",
         models=[
             ModelConfig(
-                id="ollama/llama3",
-                provider="ollama",
+                id="ollama:llama3",
                 base_url="http://localhost:11434",
                 enabled=True,
             ),

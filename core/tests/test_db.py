@@ -104,18 +104,18 @@ def _make_synthesis() -> CouncilSynthesis:
         disagreements=[
             Disagreement(
                 point="Tone of response",
-                models_for=["openai/gpt-4o"],
-                models_against=["anthropic/claude-3-5-sonnet-20241022"],
+                models_for=["openai:gpt-4o"],
+                models_against=["anthropic:claude-sonnet-5"],
             )
         ],
         verdict=Verdict(
-            strongest="openai/gpt-4o",
-            weakest="anthropic/claude-3-5-sonnet-20241022",
+            strongest="openai:gpt-4o",
+            weakest="anthropic:claude-sonnet-5",
             justification="GPT provided a more structured answer.",
         ),
         unique_insights={
-            "openai/gpt-4o": ["Mentioned the philosophical angle."],
-            "anthropic/claude-3-5-sonnet-20241022": [],
+            "openai:gpt-4o": ["Mentioned the philosophical angle."],
+            "anthropic:claude-sonnet-5": [],
         },
         blind_spots=["Neither model addressed edge cases."],
         takeaways=["Trust GPT for structured answers."],
@@ -145,7 +145,7 @@ async def test_get_session_returns_none_when_synthesis_absent(conn):
     get_session must return None rather than a partial CouncilResult.
     """
     session_id = await create_session(conn, "Partial session")
-    await save_model_response(conn, session_id, "openai/gpt-4o", "42", None)
+    await save_model_response(conn, session_id, "openai:gpt-4o", "42", None)
 
     result = await get_session(conn, session_id)
 
@@ -159,9 +159,9 @@ async def test_get_session_returns_full_result(conn):
     """
     session_id = await create_session(conn, "What is the meaning of life?")
 
-    await save_model_response(conn, session_id, "openai/gpt-4o", "42", None)
+    await save_model_response(conn, session_id, "openai:gpt-4o", "42", None)
     await save_model_response(
-        conn, session_id, "anthropic/claude-3-5-sonnet-20241022", "", "API error"
+        conn, session_id, "anthropic:claude-sonnet-5", "", "API error"
     )
 
     synthesis = _make_synthesis()
@@ -172,9 +172,9 @@ async def test_get_session_returns_full_result(conn):
     assert result.session_id == session_id
     assert result.question == "What is the meaning of life?"
     assert result.model_responses == [
-        ModelResponse(model_id="openai/gpt-4o", response="42", error=None),
+        ModelResponse(model_id="openai:gpt-4o", response="42", error=None),
         ModelResponse(
-            model_id="anthropic/claude-3-5-sonnet-20241022",
+            model_id="anthropic:claude-sonnet-5",
             response="",
             error="API error",
         ),

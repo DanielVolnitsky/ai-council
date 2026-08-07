@@ -17,8 +17,10 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "council-core",
-    "langchain>=1.0",         # init_chat_model — provider-agnostic chat model factory
-    "langchain-openai>=1.0",  # OpenAI integration, the only provider enabled in config.yaml
+    "langchain>=1.0",            # init_chat_model — provider-agnostic chat model factory
+    "langchain-openai>=1.0",     # OpenAI integration — one integration package per enabled provider
+    "langchain-anthropic>=1.0",  # Anthropic integration
+    "python-dotenv>=1.0",        # Loads .env so API keys reach os.environ without a shell export
 ]
 
 [tool.uv.sources]

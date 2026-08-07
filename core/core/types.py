@@ -41,7 +41,7 @@ class Verdict(BaseModel):
     """
     The synthesizer's quality verdict across all council responses.
 
-    `strongest` / `weakest` are model IDs (e.g. "openai/gpt-4o").
+    `strongest` / `weakest` are model IDs (e.g. "openai:gpt-4o").
     `justification` is free text explaining the ranking.
     """
     strongest: str
