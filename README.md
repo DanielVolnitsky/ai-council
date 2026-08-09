@@ -67,6 +67,11 @@ Client-agnostic REST API designed for reuse by future clients (Telegram bot, mob
 - **Single-user, local-only** for MVP
 - **Question-only input** for MVP (no file attachments or system prompts)
 
+## Planned Features
+
+- [ ] **Second debate round** — each model sees the other models' first-round answers and revises its own before synthesis runs
+- [ ] **Web search tool** — council models can call a search tool to ground their answers in current data instead of training-cutoff knowledge
+
 ## Getting Started
 
 All commands are run from the repository root. `uv` manages a single `.venv` at
