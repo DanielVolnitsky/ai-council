@@ -37,6 +37,19 @@ class Disagreement(BaseModel):
     models_against: list[str]  # model IDs that disagreed
 
 
+class ModelInsights(BaseModel):
+    """
+    The points one model raised that no other model did.
+
+    A list of these rather than a model_id -> insights mapping: a mapping with
+    free-form keys compiles to a JSON schema whose value type providers do not
+    reliably honour (and which OpenAI's strict mode rejects outright), so the
+    model id is carried as an ordinary field instead.
+    """
+    model_id: str
+    insights: list[str]
+
+
 class Verdict(BaseModel):
     """
     The synthesizer's quality verdict across all council responses.
@@ -70,8 +83,8 @@ class CouncilSynthesis(BaseModel):
     consensus: list[str]
     disagreements: list[Disagreement]
     verdict: Verdict
-    # model_id -> list of insights unique to that model
-    unique_insights: dict[str, list[str]]
+    # one entry per model that contributed something no other model did
+    unique_insights: list[ModelInsights]
     blind_spots: list[str]
     takeaways: list[str]
 

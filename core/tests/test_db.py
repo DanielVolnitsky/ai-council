@@ -40,7 +40,7 @@ from core.db import (
     save_model_response,
     save_synthesis,
 )
-from core.types import CouncilSynthesis, Disagreement, ModelResponse, Verdict
+from core.types import CouncilSynthesis, Disagreement, ModelInsights, ModelResponse, Verdict
 
 TEST_DSN = os.environ.get(
     "TEST_DATABASE_URL",
@@ -113,10 +113,12 @@ def _make_synthesis() -> CouncilSynthesis:
             weakest="anthropic:claude-sonnet-5",
             justification="GPT provided a more structured answer.",
         ),
-        unique_insights={
-            "openai:gpt-4o": ["Mentioned the philosophical angle."],
-            "anthropic:claude-sonnet-5": [],
-        },
+        unique_insights=[
+            ModelInsights(
+                model_id="openai:gpt-4o",
+                insights=["Mentioned the philosophical angle."],
+            ),
+        ],
         blind_spots=["Neither model addressed edge cases."],
         takeaways=["Trust GPT for structured answers."],
     )

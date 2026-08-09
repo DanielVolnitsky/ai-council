@@ -1,11 +1,12 @@
 # backends/langgraph/council_langgraph/demo.py
 #
-# Throwaway development harness: ask the council one question and print every
-# model's raw answer.  Deliberately NOT the CLI from the project plan — that one
-# talks to the FastAPI backend over HTTP and has history commands.  This one
-# calls run_fanout() in-process so a real provider round trip can be observed
-# before any of the HTTP layer exists.  Delete it (or keep it as a debug tool)
-# once the real CLI lands.
+# Throwaway development harness: ask the council one question, print every
+# model's raw answer, then print the synthesis of them.  Deliberately NOT the
+# CLI from the project plan — that one talks to the FastAPI backend over HTTP
+# and has history commands.  This one calls fanout_question() and synthesize()
+# in-process so a real provider round trip can be observed before any of the
+# HTTP layer exists.  Delete it (or keep it as a debug tool) once the real CLI
+# lands.
 #
 # Run it from the repository root, because load_config() resolves "config.yaml"
 # relative to the current working directory.  --package selects this workspace
@@ -22,9 +23,10 @@ import sys
 from dotenv import load_dotenv
 
 from core.config import CouncilConfig, load_config
-from core.types import ModelResponse
+from core.types import CouncilSynthesis, ModelResponse
 
 from council_langgraph.fanout import fanout_question
+from council_langgraph.synthesis import SynthesisError, council_synthesised_answer
 
 
 def _format_failure(response: ModelResponse) -> str:
@@ -41,6 +43,10 @@ def _format_response(response: ModelResponse) -> str:
     return _format_successful_answer(response)
 
 
+def _format_synthesis(synthesis: CouncilSynthesis) -> str:
+    return f"=== SYNTHESIS ===\n{synthesis.model_dump_json(indent=2)}"
+
+
 async def _ask_council(question: str) -> int:
     load_dotenv()
 
@@ -51,18 +57,17 @@ async def _ask_council(question: str) -> int:
         print(_format_response(response))
         print()
 
-    failures: list[ModelResponse] = [r for r in responses if r.error is not None]
-    if failures and len(failures) == len(responses):
+    try:
+        synthesis: CouncilSynthesis = await council_synthesised_answer(config, question, responses)
+    except SynthesisError as exc:
         # stdout is block-buffered when redirected to a file or pipe, while
-        # stderr is unbuffered — so without this flush the summary below would
-        # overtake the answers it is summarising.
+        # stderr is unbuffered — so without this flush the message below would
+        # overtake the answers it refers to.
         sys.stdout.flush()
-        print(
-            f"All {len(responses)} enabled models failed — this usually means a "
-            "local problem (config, API keys, network), not a provider outage.",
-            file=sys.stderr,
-        )
+        print(f"Synthesis failed: {exc}", file=sys.stderr)
         return 1
+
+    print(_format_synthesis(synthesis))
     return 0
 
 

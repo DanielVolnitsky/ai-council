@@ -113,8 +113,11 @@ uv run --package council-langgraph \
 ```
 
 Runs the demo harness in `backends/langgraph/council_langgraph/demo.py`:
-it fans the question out to every enabled model in `config.yaml` concurrently and
-prints each raw answer. This makes real, billable provider calls.
+it fans the question out to every enabled model in `config.yaml` concurrently,
+prints each raw answer, then asks the synthesizer model
+(`default_synthesizer`) to merge them and prints the seven-section synthesis as
+JSON. This makes real, billable provider calls — one per council member plus one
+for the synthesizer.
 
 `--package` selects the workspace member to run *without* changing the working
 directory — unlike `--directory` above. That matters here because
