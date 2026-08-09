@@ -18,6 +18,12 @@
 ### Functions
 - When a function body is a simple if / else over two distinct paths, extract each path into its own private function and make the public function a one-line router.
 
+### Comments
+- Do not comment or docstring what the code already says. A docstring that paraphrases the signature ("Persist one model's response for a session") is noise — delete it and let the name and types carry it. If a function needs a docstring to be understandable, rename it or split it first.
+- Comment only what the code *cannot* say: a decision and its reason, a constraint imposed from outside, a non-obvious consequence. Examples worth keeping — why a bare `except Exception` is deliberate here but not there; why `method="function_calling"` instead of the provider default; why a `cast` is safe; why stdout is flushed before writing to stderr.
+- Module headers, when present, are one or two lines naming the module's role — not essays.
+- The same applies to tests: a test docstring earns its place only when it states why the behavior matters, something the test name and assertions cannot. Restating the test name is not a reason.
+
 ### Tests
 - When asserting the shape of a dict or list of dicts, use a single equality assertion against the full expected structure rather than multiple field-by-field assertions — it catches all fields at once (including ones the piecemeal version silently ignores) and reads as a clear input → output example.
 

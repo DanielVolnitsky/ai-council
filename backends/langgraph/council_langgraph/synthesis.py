@@ -1,29 +1,8 @@
-# backends/langgraph/council_langgraph/synthesis.py
+# Synthesis: reduce the council's N answers to one CouncilSynthesis document.
 #
-# Synthesis: turn the council's raw answers into the structured seven-section
-# document (core.types.CouncilSynthesis).
-#
-# This is the second half of one council round.  fanout.py produces N answers;
-# this module reduces them to one analysis.
-#
-# Structured output:
-#   The synthesizer must return JSON matching CouncilSynthesis exactly.  Rather
-#   than asking for JSON in the prompt and parsing the reply by hand,
-#   `with_structured_output(CouncilSynthesis)` derives a JSON schema from the
-#   Pydantic model and wires it into whatever mechanism the provider offers —
-#   OpenAI's response_format, Anthropic's tool use.  LangChain then validates
-#   the reply against the model and hands back a CouncilSynthesis instance.
-#
-#   Java analogy: the difference between calling objectMapper.readValue() on a
-#   String you hope is JSON, and having the transport layer deserialise into
-#   the target type for you and throw if it does not fit.
-#
-# Failure policy — deliberately the opposite of fanout.py:
-#   A failed council *member* degrades the round (N-1 answers still synthesize
-#   fine), so fanout.py converts those into error markers.  A failed
-#   *synthesizer* leaves nothing to return, so every failure here raises.  The
-#   API layer maps SynthesisError to a 500 response (sync) or an `error` SSE
-#   event (stream), per the design spec.
+# Failure policy, deliberately the opposite of fanout.py: a failed council
+# member still leaves N-1 answers to synthesize, but a failed synthesizer leaves
+# nothing to return — so every failure here raises.
 
 from __future__ import annotations
 
@@ -40,42 +19,24 @@ from council_langgraph.fanout import build_chat_model
 
 
 class SynthesisError(Exception):
-    """
-    Base class for every reason a synthesis could not be produced.
-
-    Callers that only need "did it work?" catch this; the API layer catches the
-    subclasses to pick a status code (400 for an unknown synthesizer, 500 for
-    the rest).
-    """
+    """Callers that only need "did it work?" catch this; the API layer catches
+    the subclasses to pick a status code."""
 
 
 class UnknownSynthesizerError(SynthesisError):
-    """
-    The requested synthesizer model id is not an enabled model in config.yaml.
-
-    Caused by client input (the `synthesizer_model` request field), so the API
-    layer maps this one to 400 rather than 500.
-    """
+    """Caused by client input (the `synthesizer_model` request field), so the
+    API layer maps this one to 400 rather than 500."""
 
 
 class NoResponsesToSynthesizeError(SynthesisError):
-    """
-    Every council member failed, so there is nothing to analyse.
-
-    Distinct from a synthesizer failure: the synthesizer was never called.
-    Usually means a local problem — no API keys, no network — rather than a
-    simultaneous outage at every provider.
-    """
+    """Every council member failed, so the synthesizer was never called.
+    Usually a local problem — no API keys, no network — rather than a
+    simultaneous outage at every provider."""
 
 
 class SynthesizerCallError(SynthesisError):
-    """
-    The synthesizer model was called and did not return a usable document.
-
-    Covers both transport failures (auth, rate limit, timeout) and output that
-    did not validate against the CouncilSynthesis schema.  The original
-    exception is attached as __cause__.
-    """
+    """Covers both transport failures and output that did not validate against
+    CouncilSynthesis.  The original exception is attached as __cause__."""
 
 
 def synthesizer_effective_config(
@@ -126,21 +87,18 @@ async def council_synthesised_answer(
         # restrictions, and is what Anthropic uses by default anyway, so both
         # providers take one path.
         #
-        # with_structured_output returns a Runnable whose output type the type
-        # checker widens to dict | BaseModel, because the schema argument may
-        # also be a plain dict.  Passing a Pydantic class pins it to that class
-        # at runtime; the cast restates that guarantee.
+        # with_structured_output's return type widens to dict | BaseModel because
+        # the schema argument may also be a plain dict; passing a Pydantic class
+        # pins it at runtime, which the cast below restates.
         structured = chat_model.with_structured_output(
             CouncilSynthesis, method="function_calling"
         )
         synthesis = await structured.ainvoke(messages)
     except Exception as exc:
-        # Bare `except Exception` for the same reason as in fanout.py: provider
-        # SDKs raise a wide, undocumented range of errors, and pydantic adds
-        # ValidationError on top when the reply does not fit the schema.  All of
-        # them mean the same thing to the caller — no document — so they are
-        # normalised into one type.  Nothing is swallowed: `from exc` keeps the
-        # original traceback reachable via __cause__.
+        # Bare `except Exception` for the same reason as in fanout.py, plus
+        # pydantic's ValidationError when the reply does not fit the schema.  All
+        # of them mean the same thing to the caller — no document — so they are
+        # normalised into one type.  `from exc` keeps the original reachable.
         raise SynthesizerCallError(
             f"synthesizer '{synthesizer_config.id}' failed: {type(exc).__name__}: {exc}"
         ) from exc

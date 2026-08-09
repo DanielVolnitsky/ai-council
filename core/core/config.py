@@ -1,16 +1,4 @@
-# core/core/config.py
-#
-# Loads config.yaml into a validated, typed Python object.
-#
-# Why Pydantic for config?
-#   config.yaml is an external input (like an API request body) — it can be
-#   malformed, missing required fields, or structurally wrong.  Pydantic's
-#   model_validate() gives us free field presence checks, type coercion, and
-#   clear error messages, replacing what would be a hand-rolled validation loop.
-#
-#   Java analogy: parsing config.yaml into a @ConfigurationProperties class
-#   annotated with @Validated, where Spring Boot raises a startup error if any
-#   required field is absent or has the wrong type.
+# Loads config.yaml into a validated CouncilConfig.
 
 from __future__ import annotations
 
@@ -21,55 +9,26 @@ from pydantic import BaseModel, model_validator
 
 
 class ModelConfig(BaseModel):
-    """
-    Configuration for one LLM model as declared in config.yaml.
-
-    `id` is the unique key used throughout the system (e.g. "openai:gpt-4o").
-    LangChain's init_chat_model parses this exact "<provider>:<model>" format,
-    so the config id doubles as the model name — no translation needed.
-
-    `api_key_env` is the *name* of the environment variable that holds the
-    API key (e.g. "OPENAI_API_KEY"), not the key itself.  The backend reads
-    os.environ[model.api_key_env] at call time.  This indirection keeps
-    secrets out of config files.
-
-    `base_url` is only needed for self-hosted providers like Ollama.
-    """
+    # `id` is LangChain's "<provider>:<model>" string, passed straight to
+    # init_chat_model — the config id doubles as the model name.
     id: str
-    api_key_env: str | None = None   # None for local providers (Ollama)
-    base_url: str | None = None      # Override the provider's default endpoint
+    # The *name* of the env var holding the key, never the key itself.
+    # None for local providers (Ollama).
+    api_key_env: str | None = None
+    base_url: str | None = None
     enabled: bool = True
 
 
 class CouncilConfig(BaseModel):
-    """
-    The full configuration loaded from config.yaml.
-
-    `enabled_models` is a @property (not a stored field) so it is always
-    computed from the current `models` list rather than being a stale snapshot.
-    Pydantic does not serialise properties — only `BaseModel` fields are
-    included in model_dump() output.
-    """
     default_synthesizer: str
     models: list[ModelConfig]
 
     @property
     def enabled_models(self) -> list[ModelConfig]:
-        """Convenience filter: only models where enabled=true."""
         return [m for m in self.models if m.enabled]
 
     @model_validator(mode="after")
     def _synthesizer_must_be_enabled(self) -> "CouncilConfig":
-        """
-        Fail fast at startup if default_synthesizer is not in the enabled list.
-
-        `mode="after"` means this validator runs after all fields have been
-        populated and type-checked.  `self` is the fully constructed model
-        instance, so we can call self.enabled_models here.
-
-        Raising ValueError inside a Pydantic validator causes model_validate()
-        to raise a ValidationError, which is what callers expect.
-        """
         enabled_ids = {m.id for m in self.enabled_models}
         if self.default_synthesizer not in enabled_ids:
             raise ValueError(
@@ -80,17 +39,7 @@ class CouncilConfig(BaseModel):
 
 
 def load_config(path: str | Path = "config.yaml") -> CouncilConfig:
-    """
-    Read config.yaml from `path` and return a validated CouncilConfig.
-
-    Raises:
-        FileNotFoundError   — if config.yaml does not exist.
-        yaml.YAMLError      — if the file is not valid YAML.
-        pydantic.ValidationError — if required fields are missing or the
-                              default_synthesizer is not in the enabled list.
-
-    `yaml.safe_load` is used instead of `yaml.load` to prevent arbitrary
-    Python object deserialisation from untrusted YAML.
-    """
+    # safe_load rather than load: config.yaml must never be able to construct
+    # arbitrary Python objects.
     raw: dict = yaml.safe_load(Path(path).read_text())
     return CouncilConfig.model_validate(raw)

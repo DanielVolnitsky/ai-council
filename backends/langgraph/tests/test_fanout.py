@@ -1,12 +1,4 @@
-# backends/langgraph/tests/test_fanout.py
-#
-# Unit tests for the model fan-out.  No network calls: build_chat_model is
-# monkeypatched with a stub factory, so every test runs offline and instantly.
-#
-# monkeypatch is pytest's built-in fixture for temporarily replacing an
-# attribute; the original is restored when the test ends.  It is the closest
-# equivalent to Mockito's static mocking, but scoped by the test runner rather
-# than a try/finally block.
+# No network calls: build_chat_model is monkeypatched with a stub factory.
 
 from typing import Callable, TypedDict
 
@@ -16,10 +8,6 @@ from langchain_core.messages import AIMessage
 from council_langgraph import fanout
 from core.config import CouncilConfig, ModelConfig
 from core.types import ModelResponse
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
 
 CONFIG: CouncilConfig = CouncilConfig(
     default_synthesizer="openai:gpt-4o",
@@ -32,13 +20,6 @@ CONFIG: CouncilConfig = CouncilConfig(
 
 
 class StubChatModel:
-    """
-    Stands in for a LangChain chat model.
-
-    Either replies with `reply` or raises `error` from ainvoke(), which is the
-    only method run_fanout() calls on a chat model.
-    """
-
     def __init__(self, reply: AIMessage | None = None, error: Exception | None = None):
         self._reply: AIMessage | None = reply
         self._error: Exception | None = error
@@ -52,31 +33,18 @@ class StubChatModel:
 def stub_builder(
     replies: dict[str, StubChatModel],
 ) -> Callable[[ModelConfig], StubChatModel]:
-    """Build a build_chat_model replacement that dispatches on model id."""
     return lambda model_config: replies[model_config.id]
 
 
 class CapturedInitArgs(TypedDict, total=False):
-    """
-    What the fake init_chat_model recorded about the call it received.
-
-    `total=False` because api_key and base_url are each present only when the
-    ModelConfig under test declares them.
-    """
+    # total=False: api_key and base_url are each present only when the
+    # ModelConfig under test declares them.
     model_id: str
     api_key: str
     base_url: str
 
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
 async def test_fanout_returns_one_response_per_enabled_model(monkeypatch):
-    """
-    Golden path: every enabled model answers, and the disabled Ollama model is
-    absent from the result.  Responses come back in config order.
-    """
     monkeypatch.setattr(fanout, "build_chat_model", stub_builder({
         "openai:gpt-4o": StubChatModel(AIMessage(content="gpt says yes")),
         "anthropic:claude-sonnet-5": StubChatModel(AIMessage(content="claude says no")),
@@ -91,10 +59,6 @@ async def test_fanout_returns_one_response_per_enabled_model(monkeypatch):
 
 
 async def test_failing_model_does_not_abort_the_others(monkeypatch):
-    """
-    A dead provider must degrade to an error marker, not kill the round —
-    the surviving model's answer is still returned.
-    """
     monkeypatch.setattr(fanout, "build_chat_model", stub_builder({
         "openai:gpt-4o": StubChatModel(error=TimeoutError("request timed out")),
         "anthropic:claude-sonnet-5": StubChatModel(AIMessage(content="claude says no")),
@@ -109,10 +73,6 @@ async def test_failing_model_does_not_abort_the_others(monkeypatch):
 
 
 async def test_block_style_content_is_flattened_to_text(monkeypatch):
-    """
-    Providers may reply with typed content blocks instead of a plain string.
-    Only the text blocks survive; non-text blocks are dropped.
-    """
     monkeypatch.setattr(fanout, "build_chat_model", stub_builder({
         "openai:gpt-4o": StubChatModel(AIMessage(content=[
             {"type": "text", "text": "first part "},
@@ -131,10 +91,8 @@ async def test_block_style_content_is_flattened_to_text(monkeypatch):
 
 
 def test_build_chat_model_reads_api_key_from_env(monkeypatch):
-    """
-    The key is looked up from the env var *named* in config.yaml and handed to
-    the provider class — config never holds the secret itself.
-    """
+    """The key is looked up from the env var named in config.yaml — config never
+    holds the secret itself."""
     captured: CapturedInitArgs = {}
 
     def fake_init_chat_model(model_id: str, **kwargs: str) -> StubChatModel:
@@ -150,7 +108,6 @@ def test_build_chat_model_reads_api_key_from_env(monkeypatch):
 
 
 def test_build_chat_model_passes_base_url_without_api_key(monkeypatch):
-    """A local provider (Ollama) has no key — only base_url is forwarded."""
     captured: CapturedInitArgs = {}
 
     def fake_init_chat_model(model_id: str, **kwargs: str) -> StubChatModel:
@@ -167,10 +124,8 @@ def test_build_chat_model_passes_base_url_without_api_key(monkeypatch):
 
 
 def test_missing_api_key_env_var_raises(monkeypatch):
-    """
-    An unset API key env var is a deployment error.  build_chat_model raises
-    KeyError; run_fanout is what converts it into a per-model error marker.
-    """
+    """An unset key is a deployment error: build_chat_model raises KeyError, and
+    the fan-out is what converts it into a per-model error marker."""
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
     with pytest.raises(KeyError, match="OPENAI_API_KEY"):

@@ -1,22 +1,7 @@
-# core/tests/test_config.py
-#
-# Unit tests for the config loader.
-#
-# Each test writes a YAML file to pytest's `tmp_path` fixture (a per-test
-# temporary directory managed by pytest — no manual cleanup needed) and calls
-# load_config() on it.
-#
-# pytest's `tmp_path` fixture is analogous to JUnit 5's @TempDir.
-
 import pytest
 from pydantic import ValidationError
 
 from core.config import CouncilConfig, ModelConfig, load_config
-
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
 
 VALID_YAML = """\
 default_synthesizer: openai:gpt-4o
@@ -32,17 +17,7 @@ models:
 """
 
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
 def test_load_config_returns_valid_config(tmp_path):
-    """
-    Golden-path: a well-formed config.yaml produces the expected CouncilConfig.
-
-    Asserting against the full expected object catches all fields at once,
-    including any newly added ones the test might otherwise silently ignore.
-    """
     config_file = tmp_path / "config.yaml"
     config_file.write_text(VALID_YAML)
 
@@ -66,7 +41,6 @@ def test_load_config_returns_valid_config(tmp_path):
 
 
 def test_enabled_models_excludes_disabled(tmp_path):
-    """enabled_models property only includes models where enabled=true."""
     config_file = tmp_path / "config.yaml"
     config_file.write_text(VALID_YAML)
 
@@ -76,11 +50,8 @@ def test_enabled_models_excludes_disabled(tmp_path):
 
 
 def test_default_synthesizer_not_in_enabled_raises(tmp_path):
-    """
-    Validation must reject a config where default_synthesizer points to a
-    disabled model — otherwise the backend would start up and immediately
-    fail on the first synthesis call.
-    """
+    """Without this check the backend starts up fine and fails on the first
+    synthesis call instead."""
     yaml_content = """\
 default_synthesizer: openai:gpt-4o
 models:
@@ -95,16 +66,12 @@ models:
 
 
 def test_missing_file_raises_file_not_found():
-    """load_config propagates FileNotFoundError for a non-existent path."""
     with pytest.raises(FileNotFoundError):
         load_config("/nonexistent/path/config.yaml")
 
 
 def test_ollama_model_without_api_key_env_is_valid(tmp_path):
-    """
-    Local providers (Ollama) have no API key.
-    api_key_env=None must not fail validation.
-    """
+    """Local providers have no API key, so api_key_env=None must validate."""
     yaml_content = """\
 default_synthesizer: ollama:llama3
 models:

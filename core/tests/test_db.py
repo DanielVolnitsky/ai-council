@@ -1,31 +1,5 @@
-# core/tests/test_db.py
-#
-# Unit tests for the PostgreSQL persistence layer.
-#
-# These tests require a running PostgreSQL instance.  Start one with:
-#   docker compose up db -d
-#
-# The connection string defaults to the local Docker Compose database.
-# Override by setting TEST_DATABASE_URL in your environment.
-#
-# Test isolation — transaction rollback:
-#   Each test runs inside a transaction that is rolled back when the test
-#   finishes, leaving the database in exactly the state it was before the
-#   test started.  No TRUNCATE or DROP needed between tests.
-#
-#   This is the standard "transactional test case" pattern — identical to
-#   Spring's @Transactional on test classes where the transaction is rolled
-#   back rather than committed.
-#
-# Event loop scope:
-#   asyncpg connections and pools are bound to the asyncio event loop they
-#   were created in.  pytest-asyncio creates a *new* event loop per test
-#   function by default.  To avoid "Future attached to a different loop"
-#   errors, both the pool fixture and the conn fixture must be function-scoped
-#   so they are created and destroyed within the same loop as the test.
-#
-#   Creating a pool per test adds ~1 connection round-trip of overhead, which
-#   is negligible for a local test suite.
+# Requires a running PostgreSQL: `docker compose up db -d`.  Override the
+# connection string with TEST_DATABASE_URL.
 
 import os
 
@@ -48,21 +22,11 @@ TEST_DSN = os.environ.get(
 )
 
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
 @pytest_asyncio.fixture
 async def db_pool():
-    """
-    Create a fresh connection pool for each test function.
-
-    Function scope (the default) ensures the pool is created in the same
-    event loop as the test itself.  asyncpg binds connections to the event
-    loop they were created in; mixing loops causes RuntimeError.
-
-    Teardown closes all connections in the pool, releasing them back to PG.
-    """
+    # Function-scoped on purpose: asyncpg binds connections to the event loop
+    # that created them, and pytest-asyncio makes a new loop per test.  A
+    # longer-lived pool raises "Future attached to a different loop".
     pool = await init_db(TEST_DSN)
     yield pool
     await pool.close()
@@ -70,32 +34,14 @@ async def db_pool():
 
 @pytest_asyncio.fixture
 async def conn(db_pool: asyncpg.Pool):
-    """
-    Provide an open transaction for one test, then roll it back.
-
-    `scope` defaults to "function" — each test gets its own transaction.
-
-    How it works:
-    1. Acquire a connection from the pool.
-    2. Start an explicit transaction (`tr.start()`).
-    3. Yield the connection to the test — the test sees a clean DB.
-    4. After the test returns (pass or fail), roll back the transaction.
-       Every INSERT / UPDATE the test made is undone; the DB is unchanged.
-
-    asyncpg.Connection.transaction() returns a Transaction object.  It must
-    be started with await tr.start() — unlike aiosqlite where BEGIN is
-    implicit.
-    """
+    # Each test runs in a transaction that is rolled back afterwards, so tests
+    # see a clean database without any TRUNCATE between them.
     async with db_pool.acquire() as c:
         tr = c.transaction()
         await tr.start()
         yield c
         await tr.rollback()
 
-
-# ---------------------------------------------------------------------------
-# Helper: a complete CouncilSynthesis for use across tests
-# ---------------------------------------------------------------------------
 
 def _make_synthesis() -> CouncilSynthesis:
     return CouncilSynthesis(
@@ -124,10 +70,6 @@ def _make_synthesis() -> CouncilSynthesis:
     )
 
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
 async def test_create_session_returns_uuid(conn):
     session_id = await create_session(conn, "What is the meaning of life?")
 
@@ -142,10 +84,8 @@ async def test_get_session_returns_none_for_missing_id(conn):
 
 
 async def test_get_session_returns_none_when_synthesis_absent(conn):
-    """
-    A session with model responses but no synthesis is still in-progress;
-    get_session must return None rather than a partial CouncilResult.
-    """
+    """A session without a synthesis is still in progress, and a partial
+    CouncilResult would be indistinguishable from a finished one."""
     session_id = await create_session(conn, "Partial session")
     await save_model_response(conn, session_id, "openai:gpt-4o", "42", None)
 
@@ -155,10 +95,6 @@ async def test_get_session_returns_none_when_synthesis_absent(conn):
 
 
 async def test_get_session_returns_full_result(conn):
-    """
-    After saving two model responses (one success, one failure) and a synthesis,
-    get_session returns a CouncilResult matching exactly what was written.
-    """
     session_id = await create_session(conn, "What is the meaning of life?")
 
     await save_model_response(conn, session_id, "openai:gpt-4o", "42", None)
@@ -191,12 +127,6 @@ async def test_list_sessions_is_empty_initially(conn):
 
 
 async def test_list_sessions_returns_newest_first(conn):
-    """
-    list_sessions orders by created_at DESC.  We capture the actual
-    created_at values from the result to build the expected structure —
-    this verifies all keys are present, the order is correct, and the
-    questions are paired with the right IDs.
-    """
     id1 = await create_session(conn, "First question")
     id2 = await create_session(conn, "Second question")
 

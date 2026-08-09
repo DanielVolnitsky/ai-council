@@ -1,17 +1,11 @@
-# backends/langgraph/council_langgraph/demo.py
-#
-# Throwaway development harness: ask the council one question, print every
-# model's raw answer, then print the synthesis of them.  Deliberately NOT the
-# CLI from the project plan — that one talks to the FastAPI backend over HTTP
-# and has history commands.  This one calls fanout_question() and synthesize()
-# in-process so a real provider round trip can be observed before any of the
-# HTTP layer exists.  Delete it (or keep it as a debug tool) once the real CLI
-# lands.
+# Throwaway development harness: ask the council one question in-process and
+# print the raw answers plus the synthesis, so a real provider round trip can be
+# observed before the HTTP layer exists.  Not the CLI from the project plan.
 #
 # Run it from the repository root, because load_config() resolves "config.yaml"
-# relative to the current working directory.  --package selects this workspace
-# member without changing the working directory (unlike --directory), and is
-# required because the root workspace package does not depend on this one:
+# relative to the working directory.  --package selects this workspace member
+# without changing that directory (unlike --directory), and is required because
+# the root workspace package does not depend on this one:
 #
 #     uv run --package council-langgraph python -m council_langgraph.demo "is it worth it?"
 
@@ -61,7 +55,7 @@ async def _ask_council(question: str) -> int:
         synthesis: CouncilSynthesis = await council_synthesised_answer(config, question, responses)
     except SynthesisError as exc:
         # stdout is block-buffered when redirected to a file or pipe, while
-        # stderr is unbuffered — so without this flush the message below would
+        # stderr is unbuffered — without this flush the message below would
         # overtake the answers it refers to.
         sys.stdout.flush()
         print(f"Synthesis failed: {exc}", file=sys.stderr)
@@ -84,5 +78,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    # sys.exit() sets the process exit status from main()'s return value.
     sys.exit(main())
