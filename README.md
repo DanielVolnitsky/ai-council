@@ -24,7 +24,7 @@ A multimodel deliberation tool that sends your question to N language models fro
 Monorepo with a LangGraph backend sharing a common core:
 
 ```
-core/              # Shared: models, DB, config, synthesis prompt
+core/              # Shared: models, config, synthesis prompt
 backends/
   langgraph/       # Provider fan-out; LangGraph orchestration planned
 frontend/          # React (Vite) SPA — not built yet
@@ -39,7 +39,6 @@ frontend/          # React (Vite) SPA — not built yet
 | Provider abstraction | LangChain (`init_chat_model`) |
 | Orchestration | LangGraph _(planned)_ |
 | Streaming | SSE (Server-Sent Events) |
-| Persistence | PostgreSQL (asyncpg, Docker) |
 | Config | YAML |
 | Tracing | Langfuse (self-hosted, Docker) |
 | Package manager | uv |
@@ -64,6 +63,7 @@ Client-agnostic REST API designed for reuse by future clients (Telegram bot, mob
 - **Configurable synthesizer** — any model can be the synthesizer, user picks via config
 - **LangChain for provider abstraction** — `init_chat_model` resolves a `"<provider>:<model>"` string into the right chat model class, so `config.yaml` ids need no translation table
 - **LangGraph orchestration** _(planned)_ — provider fan-out and synthesis will be modelled as graph nodes; today `fanout.py` is a plain `asyncio.gather` and no graph exists yet
+- **No persistence** — a council round returns its result and keeps nothing; history and the session endpoints the original spec described are dropped until something actually needs to re-read a past round
 - **Single-user, local-only** for MVP
 - **Question-only input** for MVP (no file attachments or system prompts)
 
@@ -133,14 +133,12 @@ work, because the root workspace package does not depend on `council-langgraph`.
 ### 5. Run the tests
 
 ```bash
-docker compose up -d db     # core/tests/test_db.py talks to a real PostgreSQL
 uv run --group dev pytest
 ```
 
 The `dev` group (pytest, pytest-asyncio) lives in the root `pyproject.toml` so a
-single invocation covers all members. Without the database running, the config
-and fan-out tests still pass but every `test_db.py` case errors out with
-`Connect call failed ('127.0.0.1', 5432)`.
+single invocation covers all members. Every test runs in-process — there is no
+database or other service to start first.
 
 ## License
 

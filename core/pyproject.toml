@@ -1,6 +1,6 @@
 # pyproject.toml for the `council-core` package.
 #
-# This is the shared library — config loader, DB layer, shared types.
+# This is the shared library — config loader, shared types, synthesis prompt.
 # Both backends declare it as a dependency so they can import from `core.*`.
 #
 # [build-system] tells uv/pip how to build this package into a wheel.
@@ -16,7 +16,6 @@ requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.0",   # Data validation / serialisation — used for CouncilSynthesis, CouncilResult, and config models
     "pyyaml>=6.0",     # YAML parsing for config.yaml
-    "asyncpg>=0.29",   # Async PostgreSQL driver — pure Python, no libpq required
 ]
 
 # [tool.hatch.build.targets.wheel] tells hatchling which directory contains

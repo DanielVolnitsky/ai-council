@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import ClassVar, TypedDict
+from typing import ClassVar
 
 from pydantic import BaseModel
 
@@ -41,23 +41,10 @@ class ModelResponse(BaseModel):
 
 
 class CouncilResult(BaseModel):
-    session_id: str
     question: str
     created_at: datetime
     model_responses: list[ModelResponse]
     synthesis: CouncilSynthesis
-
-
-class SessionSummary(TypedDict):
-    id: str
-    question: str
-    created_at: datetime
-
-
-@dataclass
-class SessionStartEvent:
-    session_id: str
-    event: ClassVar[str] = "session_start"
 
 
 @dataclass

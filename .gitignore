@@ -31,11 +31,6 @@ coverage.xml
 .pytype/
 .ruff_cache/
 
-# SQLite (local DB — don't commit user data)
-*.db
-*.sqlite3
-*.sqlite3-journal
-
 # React / Vite (frontend)
 frontend/node_modules/
 frontend/dist/
