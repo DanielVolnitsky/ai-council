@@ -48,7 +48,12 @@ frontend/          # React (Vite) SPA — not built yet
 Client-agnostic REST API designed for reuse by future clients (Telegram bot, mobile app, etc.):
 
 - `POST /api/council/ask` — synchronous, returns full JSON result
-- `POST /api/council/ask/stream` — SSE, streams token events per model + synthesis
+- `POST /api/council/ask/stream` — SSE, streams token events per model + synthesis _(planned)_
+
+`ask` takes `{"question": "..."}` and nothing else — the synthesizer is whatever
+`default_synthesizer` in `config.yaml` names, with no per-request override, so a
+round's composition is a config decision rather than a caller's. A synthesizer that
+fails, or a round where every council member failed, returns 502.
 
 ### Supported Providers
 
@@ -89,11 +94,13 @@ cp .env.example .env      # then paste your real keys into .env
 ### 2. Install dependencies
 
 ```bash
-uv sync --frozen
+uv sync --all-packages --frozen
 ```
 
 Resolves and installs every workspace member's dependencies into the root
-`.venv`. `--frozen` installs exactly what `uv.lock` pins and fails instead of
+`.venv`. `--all-packages` is required: a plain `uv sync` at the root treats only
+the root package as installable and *uninstalls* `core` and `council-langgraph`,
+after which every import of them fails. `--frozen` installs exactly what `uv.lock` pins and fails instead of
 re-resolving, so the environment matches the committed lockfile — use it
 whenever you have not intentionally changed a dependency. Run this after
 pulling, or whenever imports fail for a package that is already listed in a
@@ -130,7 +137,24 @@ directory — unlike `--directory` above. That matters here because
 command must stay at the repository root. Plain `uv run python -m ...` does not
 work, because the root workspace package does not depend on `council-langgraph`.
 
-### 5. Run the tests
+### 5. Serve the API
+
+```bash
+uv run --package council-langgraph uvicorn council_langgraph.api:app --reload
+```
+
+Serves `POST /api/council/ask` on http://127.0.0.1:8000, with the interactive
+schema at `/docs`. Same `--package` reasoning as the demo above: the server must run from the repository root because `load_config()` resolves `config.yaml` relative to the current directory. Try it:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/council/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"question": "Spider-Man vs Punisher, who wins?"}'
+```
+
+Like the demo, this makes real billable provider calls.
+
+### 6. Run the tests
 
 ```bash
 uv run --group dev pytest

@@ -45,6 +45,7 @@ docker-data/
 
 # IDE
 .idea/
+.run/
 .vscode/
 *.swp
 *.swo
