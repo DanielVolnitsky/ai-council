@@ -1,5 +1,3 @@
-# Shared data shapes used by both backends, the DB layer, and the API contract.
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -16,9 +14,6 @@ class Disagreement(BaseModel):
 
 
 class ModelInsights(BaseModel):
-    # A list of these rather than a model_id -> insights mapping: a mapping with
-    # free-form keys compiles to a JSON schema whose value type providers do not
-    # reliably honour, and which OpenAI's strict mode rejects outright.
     model_id: str
     insights: list[str]
 
@@ -34,16 +29,12 @@ class CouncilSynthesis(BaseModel):
     consensus: list[str]
     disagreements: list[Disagreement]
     verdict: Verdict
-    # one entry per model that contributed something no other model did
     unique_insights: list[ModelInsights]
     blind_spots: list[str]
     takeaways: list[str]
 
 
 class ModelResponse(BaseModel):
-    # A failed model is included with response="" and error set, rather than
-    # omitted: callers must check `error is not None` to tell failure from an
-    # empty answer.
     model_id: str
     response: str
     error: str | None = None
@@ -62,10 +53,6 @@ class SessionSummary(TypedDict):
     question: str
     created_at: datetime
 
-
-# Each dataclass below is one SSE frame emitted by POST /api/council/ask/stream.
-# `event` is a ClassVar so dataclasses.asdict() yields only the JSON payload
-# while `instance.event` still names the frame.
 
 @dataclass
 class SessionStartEvent:
@@ -102,6 +89,5 @@ class SynthDoneEvent:
 
 @dataclass
 class ErrorEvent:
-    # The stream is closed immediately after this event.
     message: str
     event: ClassVar[str] = "error"

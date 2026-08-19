@@ -1,6 +1,3 @@
-# Requires a running PostgreSQL: `docker compose up db -d`.  Override the
-# connection string with TEST_DATABASE_URL.
-
 import os
 
 import asyncpg
@@ -24,9 +21,6 @@ TEST_DSN = os.environ.get(
 
 @pytest_asyncio.fixture
 async def db_pool():
-    # Function-scoped on purpose: asyncpg binds connections to the event loop
-    # that created them, and pytest-asyncio makes a new loop per test.  A
-    # longer-lived pool raises "Future attached to a different loop".
     pool = await init_db(TEST_DSN)
     yield pool
     await pool.close()
@@ -34,8 +28,6 @@ async def db_pool():
 
 @pytest_asyncio.fixture
 async def conn(db_pool: asyncpg.Pool):
-    # Each test runs in a transaction that is rolled back afterwards, so tests
-    # see a clean database without any TRUNCATE between them.
     async with db_pool.acquire() as c:
         tr = c.transaction()
         await tr.start()
@@ -73,7 +65,7 @@ def _make_synthesis() -> CouncilSynthesis:
 async def test_create_session_returns_uuid(conn):
     session_id = await create_session(conn, "What is the meaning of life?")
 
-    assert len(session_id) == 36   # UUID v4: 8-4-4-4-12 hex digits + 4 dashes
+    assert len(session_id) == 36
     assert session_id.count("-") == 4
 
 
@@ -84,8 +76,6 @@ async def test_get_session_returns_none_for_missing_id(conn):
 
 
 async def test_get_session_returns_none_when_synthesis_absent(conn):
-    """A session without a synthesis is still in progress, and a partial
-    CouncilResult would be indistinguishable from a finished one."""
     session_id = await create_session(conn, "Partial session")
     await save_model_response(conn, session_id, "openai:gpt-4o", "42", None)
 

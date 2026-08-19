@@ -1,14 +1,3 @@
-# Throwaway development harness: ask the council one question in-process and
-# print the raw answers plus the synthesis, so a real provider round trip can be
-# observed before the HTTP layer exists.  Not the CLI from the project plan.
-#
-# Run it from the repository root, because load_config() resolves "config.yaml"
-# relative to the working directory.  --package selects this workspace member
-# without changing that directory (unlike --directory), and is required because
-# the root workspace package does not depend on this one:
-#
-#     uv run --package council-langgraph python -m council_langgraph.demo "is it worth it?"
-
 from __future__ import annotations
 
 import asyncio
@@ -54,9 +43,6 @@ async def _ask_council(question: str) -> int:
     try:
         synthesis: CouncilSynthesis = await council_synthesised_answer(config, question, responses)
     except SynthesisError as exc:
-        # stdout is block-buffered when redirected to a file or pipe, while
-        # stderr is unbuffered — without this flush the message below would
-        # overtake the answers it refers to.
         sys.stdout.flush()
         print(f"Synthesis failed: {exc}", file=sys.stderr)
         return 1

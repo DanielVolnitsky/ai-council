@@ -1,9 +1,3 @@
-# Synthesis: reduce the council's N answers to one CouncilSynthesis document.
-#
-# Failure policy, deliberately the opposite of fanout.py: a failed council
-# member still leaves N-1 answers to synthesize, but a failed synthesizer leaves
-# nothing to return — so every failure here raises.
-
 from __future__ import annotations
 
 from typing import cast
@@ -19,24 +13,19 @@ from council_langgraph.fanout import build_chat_model
 
 
 class SynthesisError(Exception):
-    """Callers that only need "did it work?" catch this; the API layer catches
-    the subclasses to pick a status code."""
+    pass
 
 
 class UnknownSynthesizerError(SynthesisError):
-    """Caused by client input (the `synthesizer_model` request field), so the
-    API layer maps this one to 400 rather than 500."""
+    pass
 
 
 class NoResponsesToSynthesizeError(SynthesisError):
-    """Every council member failed, so the synthesizer was never called.
-    Usually a local problem — no API keys, no network — rather than a
-    simultaneous outage at every provider."""
+    pass
 
 
 class SynthesizerCallError(SynthesisError):
-    """Covers both transport failures and output that did not validate against
-    CouncilSynthesis.  The original exception is attached as __cause__."""
+    pass
 
 
 def synthesizer_effective_config(
@@ -80,25 +69,11 @@ async def council_synthesised_answer(
 
     try:
         chat_model: BaseChatModel = build_chat_model(synthesizer_config)
-        # method="function_calling" rather than the provider default: OpenAI's
-        # default (response_format / json_schema) runs the schema through its
-        # *strict* validator, which rejects several shapes pydantic emits
-        # routinely.  Tool calling carries the same schema without those
-        # restrictions, and is what Anthropic uses by default anyway, so both
-        # providers take one path.
-        #
-        # with_structured_output's return type widens to dict | BaseModel because
-        # the schema argument may also be a plain dict; passing a Pydantic class
-        # pins it at runtime, which the cast below restates.
         structured = chat_model.with_structured_output(
             CouncilSynthesis, method="function_calling"
         )
         synthesis = await structured.ainvoke(messages)
     except Exception as exc:
-        # Bare `except Exception` for the same reason as in fanout.py, plus
-        # pydantic's ValidationError when the reply does not fit the schema.  All
-        # of them mean the same thing to the caller — no document — so they are
-        # normalised into one type.  `from exc` keeps the original reachable.
         raise SynthesizerCallError(
             f"synthesizer '{synthesizer_config.id}' failed: {type(exc).__name__}: {exc}"
         ) from exc

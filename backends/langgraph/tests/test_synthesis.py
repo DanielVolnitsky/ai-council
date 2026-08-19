@@ -1,7 +1,3 @@
-# No network calls and no real prompt: both build_chat_model and
-# synthesis_input are monkeypatched, so these tests cover the wiring and the
-# failure policy without re-testing core/tests/test_prompts.py.
-
 import pytest
 from pydantic import ValidationError
 
@@ -47,8 +43,6 @@ SYNTHESIS: CouncilSynthesis = CouncilSynthesis(
 
 
 class StubStructuredModel:
-    """Stands in for the Runnable returned by with_structured_output()."""
-
     def __init__(self, result: CouncilSynthesis | None = None, error: Exception | None = None):
         self._result: CouncilSynthesis | None = result
         self._error: Exception | None = error
@@ -77,8 +71,6 @@ def install_stub(
     monkeypatch,
     structured: StubStructuredModel,
 ) -> dict[str, object]:
-    """Patches out the provider factory and the prompt renderer, returning what
-    each of them was handed."""
     captured: dict[str, object] = {}
     chat_model: StubChatModel = StubChatModel(structured)
 
@@ -130,8 +122,6 @@ async def test_explicit_synthesizer_overrides_the_default(monkeypatch):
 
 
 async def test_output_is_structured_against_the_synthesis_schema(monkeypatch):
-    """Handing the provider CouncilSynthesis itself is what makes the reply
-    validated rather than hand-parsed."""
     captured: dict[str, object] = install_stub(monkeypatch, StubStructuredModel(result=SYNTHESIS))
 
     await synthesis.council_synthesised_answer(CONFIG, "is it worth it?", RESPONSES)
@@ -140,8 +130,6 @@ async def test_output_is_structured_against_the_synthesis_schema(monkeypatch):
 
 
 async def test_output_is_structured_via_tool_calling(monkeypatch):
-    """Tool calling, not the provider default: OpenAI's json_schema mode is
-    strict and rejects shapes pydantic emits routinely."""
     captured: dict[str, object] = install_stub(monkeypatch, StubStructuredModel(result=SYNTHESIS))
 
     await synthesis.council_synthesised_answer(CONFIG, "is it worth it?", RESPONSES)
@@ -162,8 +150,6 @@ async def test_system_prompt_precedes_the_rendered_responses(monkeypatch):
 
 
 async def test_failed_members_are_excluded_from_the_prompt(monkeypatch):
-    """An error marker is a fact about the infrastructure, not a position in the
-    debate — the synthesizer must not weigh "TimeoutError" as an answer."""
     captured: dict[str, object] = install_stub(monkeypatch, StubStructuredModel(result=SYNTHESIS))
 
     await synthesis.council_synthesised_answer(CONFIG, "is it worth it?", [
@@ -185,8 +171,6 @@ async def test_question_is_passed_through_verbatim(monkeypatch):
 
 
 async def test_all_members_failed_raises_before_calling_the_synthesizer(monkeypatch):
-    """Nothing to analyse means no credits spent asking a model to summarise an
-    empty council."""
     structured: StubStructuredModel = StubStructuredModel(result=SYNTHESIS)
     install_stub(monkeypatch, structured)
 
@@ -200,7 +184,6 @@ async def test_all_members_failed_raises_before_calling_the_synthesizer(monkeypa
 
 
 async def test_unknown_synthesizer_id_raises(monkeypatch):
-    """A client-supplied id that is not an enabled model — a 400, not a 500."""
     install_stub(monkeypatch, StubStructuredModel(result=SYNTHESIS))
 
     with pytest.raises(synthesis.UnknownSynthesizerError, match="google:gemini-2.5-pro"):
@@ -221,8 +204,6 @@ async def test_disabled_model_cannot_be_the_synthesizer(monkeypatch):
 
 
 async def test_provider_failure_is_wrapped_with_its_cause(monkeypatch):
-    """Unlike a council member's failure, a synthesizer failure aborts the round
-    — but the original exception stays reachable through __cause__."""
     error: TimeoutError = TimeoutError("request timed out")
     install_stub(monkeypatch, StubStructuredModel(error=error))
 
@@ -233,8 +214,6 @@ async def test_provider_failure_is_wrapped_with_its_cause(monkeypatch):
 
 
 async def test_schema_violation_is_wrapped_too(monkeypatch):
-    """LangChain's own parsing raises ValidationError, which must reach the
-    caller as a SynthesisError like any other synthesizer failure."""
     error: ValidationError = ValidationError.from_exception_data("CouncilSynthesis", [])
     install_stub(monkeypatch, StubStructuredModel(error=error))
 
@@ -248,6 +227,4 @@ async def test_schema_violation_is_wrapped_too(monkeypatch):
     synthesis.SynthesizerCallError,
 ])
 def test_every_failure_mode_is_a_synthesis_error(error_type: type):
-    """A caller that only needs "did it work?" catches one type; the API layer
-    catches the subclasses to choose a status code."""
     assert issubclass(error_type, synthesis.SynthesisError)

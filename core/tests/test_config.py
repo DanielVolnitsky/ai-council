@@ -50,8 +50,6 @@ def test_enabled_models_excludes_disabled(tmp_path):
 
 
 def test_default_synthesizer_not_in_enabled_raises(tmp_path):
-    """Without this check the backend starts up fine and fails on the first
-    synthesis call instead."""
     yaml_content = """\
 default_synthesizer: openai:gpt-4o
 models:
@@ -71,7 +69,6 @@ def test_missing_file_raises_file_not_found():
 
 
 def test_ollama_model_without_api_key_env_is_valid(tmp_path):
-    """Local providers have no API key, so api_key_env=None must validate."""
     yaml_content = """\
 default_synthesizer: ollama:llama3
 models:

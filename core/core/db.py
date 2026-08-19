@@ -1,8 +1,3 @@
-# PostgreSQL persistence for council sessions, backed by asyncpg.
-#
-# The DSN is read from DATABASE_URL (TEST_DATABASE_URL in tests) at the call
-# site, keeping credentials out of config.yaml.
-
 from __future__ import annotations
 
 import uuid
@@ -13,8 +8,6 @@ import asyncpg
 from core.types import CouncilResult, CouncilSynthesis, ModelResponse, SessionSummary
 
 
-# One statement per string: asyncpg.Connection.execute() takes a single
-# statement, not a semicolon-delimited script.
 _DDL_STATEMENTS = [
     """
     CREATE TABLE IF NOT EXISTS sessions (
@@ -28,8 +21,8 @@ _DDL_STATEMENTS = [
         id         BIGSERIAL PRIMARY KEY,
         session_id TEXT NOT NULL REFERENCES sessions(id),
         model_id   TEXT NOT NULL,
-        response   TEXT NOT NULL,  -- empty string on failure
-        error      TEXT            -- NULL on success
+        response   TEXT NOT NULL,
+        error      TEXT
     )
     """,
     """
@@ -42,8 +35,6 @@ _DDL_STATEMENTS = [
 
 
 async def init_db(dsn: str) -> asyncpg.Pool:
-    # CREATE TABLE IF NOT EXISTS keeps this idempotent, so the backend can call
-    # it on every startup and the MVP needs no migrations step.
     pool = await asyncpg.create_pool(dsn, min_size=1, max_size=5)
 
     async with pool.acquire() as conn:
@@ -82,8 +73,6 @@ async def save_synthesis(
     session_id: str,
     synthesis: CouncilSynthesis,
 ) -> None:
-    # Upsert rather than insert: re-synthesising a session overwrites its
-    # document instead of raising on the primary key.
     await conn.execute(
         """
         INSERT INTO syntheses (session_id, synthesis_json)
@@ -115,8 +104,6 @@ async def get_session(
         session_id,
     )
     if synthesis_row is None:
-        # The session exists but is still in progress; a partial CouncilResult
-        # would be indistinguishable from a finished one.
         return None
 
     model_responses = [

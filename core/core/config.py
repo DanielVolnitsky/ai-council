@@ -1,5 +1,3 @@
-# Loads config.yaml into a validated CouncilConfig.
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -9,11 +7,7 @@ from pydantic import BaseModel, model_validator
 
 
 class ModelConfig(BaseModel):
-    # `id` is LangChain's "<provider>:<model>" string, passed straight to
-    # init_chat_model — the config id doubles as the model name.
     id: str
-    # The *name* of the env var holding the key, never the key itself.
-    # None for local providers (Ollama).
     api_key_env: str | None = None
     base_url: str | None = None
     enabled: bool = True
@@ -39,7 +33,5 @@ class CouncilConfig(BaseModel):
 
 
 def load_config(path: str | Path = "config.yaml") -> CouncilConfig:
-    # safe_load rather than load: config.yaml must never be able to construct
-    # arbitrary Python objects.
     raw: dict = yaml.safe_load(Path(path).read_text())
     return CouncilConfig.model_validate(raw)

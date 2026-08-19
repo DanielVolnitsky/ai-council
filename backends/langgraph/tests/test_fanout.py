@@ -1,5 +1,3 @@
-# No network calls: build_chat_model is monkeypatched with a stub factory.
-
 from typing import Callable, TypedDict
 
 import pytest
@@ -37,8 +35,6 @@ def stub_builder(
 
 
 class CapturedInitArgs(TypedDict, total=False):
-    # total=False: api_key and base_url are each present only when the
-    # ModelConfig under test declares them.
     model_id: str
     api_key: str
     base_url: str
@@ -91,8 +87,6 @@ async def test_block_style_content_is_flattened_to_text(monkeypatch):
 
 
 def test_build_chat_model_reads_api_key_from_env(monkeypatch):
-    """The key is looked up from the env var named in config.yaml — config never
-    holds the secret itself."""
     captured: CapturedInitArgs = {}
 
     def fake_init_chat_model(model_id: str, **kwargs: str) -> StubChatModel:
@@ -124,8 +118,6 @@ def test_build_chat_model_passes_base_url_without_api_key(monkeypatch):
 
 
 def test_missing_api_key_env_var_raises(monkeypatch):
-    """An unset key is a deployment error: build_chat_model raises KeyError, and
-    the fan-out is what converts it into a per-model error marker."""
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
     with pytest.raises(KeyError, match="OPENAI_API_KEY"):
