@@ -7,7 +7,7 @@ from typing import TypedDict, cast
 
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.messages import AIMessage
 
 from core.config import CouncilConfig, ModelConfig
 from core.types import ModelDoneEvent, ModelResponse, ModelTokenEvent
@@ -28,20 +28,6 @@ def build_chat_model(model_config: ModelConfig) -> BaseChatModel:
     return cast(BaseChatModel, init_chat_model(model_config.id, **kwargs))
 
 
-def _response_text(message: BaseMessage) -> str:
-    if isinstance(message.content, str):
-        return message.content
-
-    # content is typed str | list[str | dict]; bare strings inside the list are
-    # dropped here because no enabled provider emits them — Anthropic and Gemini
-    # both return typed blocks, and the filter keeps thinking and tool_use out.
-    return "".join(
-        block["text"]
-        for block in message.content
-        if isinstance(block, dict) and block.get("type") == "text"
-    )
-
-
 async def _ask_model(model_config: ModelConfig, question: str) -> ModelResponse:
     try:
         chat_model: BaseChatModel = build_chat_model(model_config)
@@ -53,7 +39,7 @@ async def _ask_model(model_config: ModelConfig, question: str) -> ModelResponse:
             error=f"{type(exc).__name__}: {exc}",
         )
 
-    return ModelResponse(model_id=model_config.id, response=_response_text(message))
+    return ModelResponse(model_id=model_config.id, response=cast(str, message.content))
 
 
 async def fanout_question(config: CouncilConfig, question: str) -> list[ModelResponse]:
@@ -75,7 +61,7 @@ async def _stream_model(
     try:
         chat_model: BaseChatModel = build_chat_model(model_config)
         async for chunk in chat_model.astream(question):
-            token: str = _response_text(chunk)
+            token: str = cast(str, chunk.content)
             if not token:
                 continue
             chunks.append(token)

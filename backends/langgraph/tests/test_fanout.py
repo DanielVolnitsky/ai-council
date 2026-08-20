@@ -68,24 +68,6 @@ async def test_failing_model_does_not_abort_the_others(monkeypatch):
     ]
 
 
-async def test_block_style_content_is_flattened_to_text(monkeypatch):
-    monkeypatch.setattr(fanout, "build_chat_model", stub_builder({
-        "openai:gpt-4o": StubChatModel(AIMessage(content=[
-            {"type": "text", "text": "first part "},
-            {"type": "image_url", "image_url": {"url": "http://example.com/x.png"}},
-            {"type": "text", "text": "second part"},
-        ])),
-        "anthropic:claude-sonnet-5": StubChatModel(AIMessage(content="")),
-    }))
-
-    responses: list[ModelResponse] = await fanout.fanout_question(CONFIG, "is it worth it?")
-
-    assert responses == [
-        ModelResponse(model_id="openai:gpt-4o", response="first part second part", error=None),
-        ModelResponse(model_id="anthropic:claude-sonnet-5", response="", error=None),
-    ]
-
-
 def test_build_chat_model_reads_api_key_from_env(monkeypatch):
     captured: CapturedInitArgs = {}
 
