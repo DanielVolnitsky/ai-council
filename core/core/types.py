@@ -63,12 +63,6 @@ class ModelDoneEvent:
 
 
 @dataclass
-class SynthTokenEvent:
-    token: str
-    event: ClassVar[str] = "synth_token"
-
-
-@dataclass
 class SynthDoneEvent:
     synthesis: CouncilSynthesis
     event: ClassVar[str] = "synth_done"
@@ -78,3 +72,6 @@ class SynthDoneEvent:
 class ErrorEvent:
     message: str
     event: ClassVar[str] = "error"
+
+
+CouncilStreamEvent = ModelTokenEvent | ModelDoneEvent | SynthDoneEvent | ErrorEvent
