@@ -171,7 +171,7 @@ uv run --package council-langgraph uvicorn council_langgraph.api:app --reload
 ```
 
 Serves `POST /api/council/ask` and `POST /api/council/ask/stream` on
-http://127.0.0.1:8000, with the interactive schema at `/docs`.
+http://127.0.0.1:8000, with the interactive schema at http://localhost:8000/docs.
 
 `--package` selects the workspace member to run *without* changing the working
 directory — unlike `--directory` above. That matters because `load_config()`

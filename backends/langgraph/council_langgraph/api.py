@@ -11,7 +11,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import TypeAdapter
 
 from core.config import CouncilConfig, load_config
-from core.types import CouncilResult, CouncilStreamEvent
+from core.events import CouncilStreamEvent
+from core.domain import CouncilResult
 
 from council_langgraph.council import ask_council, ask_council_streaming
 from council_langgraph.synthesis import SynthesisError

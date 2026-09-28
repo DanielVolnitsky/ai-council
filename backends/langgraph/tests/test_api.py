@@ -7,7 +7,7 @@ from council_langgraph import council
 from council_langgraph.api import app, get_config
 from council_langgraph.synthesis import SynthesisError
 from core.config import CouncilConfig, ModelConfig
-from core.types import (
+from core.domain import (
     CouncilSynthesis,
     Disagreement,
     ModelInsights,

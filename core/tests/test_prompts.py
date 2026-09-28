@@ -1,7 +1,7 @@
 import pytest
 
 from core.prompts import SYNTHESIS_SYSTEM_PROMPT, synthesis_input
-from core.types import CouncilSynthesis, ModelResponse
+from core.domain import CouncilSynthesis, ModelResponse
 
 RESPONSES: list[ModelResponse] = [
     ModelResponse(model_id="openai:gpt-4o", response="Yes, because of X."),

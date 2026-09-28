@@ -13,18 +13,15 @@ from council_langgraph import council, fanout
 from council_langgraph.api import app, get_config
 from council_langgraph.synthesis import SynthesisError
 from core.config import CouncilConfig, ModelConfig
-from core.types import (
+from core.events import (
     CouncilStreamEvent,
-    CouncilSynthesis,
-    Disagreement,
     ErrorEvent,
     ModelDoneEvent,
-    ModelInsights,
     ModelTokenEvent,
     SessionStartEvent,
     SynthDoneEvent,
-    Verdict,
 )
+from core.domain import CouncilSynthesis, Disagreement, ModelInsights, Verdict
 
 CONFIG: CouncilConfig = CouncilConfig(
     default_synthesizer="openai:gpt-4o",

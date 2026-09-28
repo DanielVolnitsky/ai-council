@@ -6,7 +6,7 @@ from langchain_core.runnables import RunnableConfig
 
 from council_langgraph import fanout
 from core.config import CouncilConfig, ModelConfig
-from core.types import ModelResponse
+from core.domain import ModelResponse
 
 CONFIG: CouncilConfig = CouncilConfig(
     default_synthesizer="openai:gpt-4o",

@@ -26,6 +26,10 @@
 ### Tests
 - When asserting the shape of a dict or list of dicts, use a single equality assertion against the full expected structure rather than multiple field-by-field assertions — it catches all fields at once (including ones the piecemeal version silently ignores) and reads as a clear input → output example.
 
+## Class Diagrams
+
+- Show only public members in `.puml` class diagrams — omit private functions and methods (leading underscore) everywhere in the repo.
+
 ## Git Commit Pattern
 
 When committing changes, use the following format:

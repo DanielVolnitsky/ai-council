@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from importlib.resources import files
 
-from core.types import ModelResponse
+from core.domain import ModelResponse
 
 
 def _load_prompt(filename: str) -> str:

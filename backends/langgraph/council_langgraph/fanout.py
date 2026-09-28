@@ -10,7 +10,8 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
 
 from core.config import CouncilConfig, ModelConfig
-from core.types import ModelDoneEvent, ModelResponse, ModelTokenEvent
+from core.events import ModelDoneEvent, ModelTokenEvent
+from core.domain import ModelResponse
 
 from council_langgraph.tracing import traced_run_config
 

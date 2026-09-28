@@ -5,16 +5,14 @@ from datetime import datetime, timezone
 from typing import TypedDict
 
 from core.config import CouncilConfig
-from core.types import (
-    CouncilResult,
+from core.events import (
     CouncilStreamEvent,
-    CouncilSynthesis,
     ErrorEvent,
     ModelDoneEvent,
-    ModelResponse,
     SessionStartEvent,
     SynthDoneEvent,
 )
+from core.domain import CouncilResult, CouncilSynthesis, ModelResponse
 
 from council_langgraph.fanout import fanout_question, stream_question
 from council_langgraph.synthesis import SynthesisError, council_synthesised_answer

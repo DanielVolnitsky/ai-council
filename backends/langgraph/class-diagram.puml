@@ -1,0 +1,143 @@
+@startuml langgraph-class-diagram
+title AI Council — council_langgraph backend
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype polyline
+hide empty members
+
+package "core" <<core>> {
+  class ModelConfig
+  class CouncilConfig
+  class "config" as ConfigModule <<module>>
+  class "prompts" as PromptsModule <<module>>
+  class ModelResponse
+  class CouncilSynthesis
+  class CouncilResult
+}
+
+package "core.events" <<core>> {
+  interface CouncilStreamEvent <<union>>
+  class ModelTokenEvent
+  class ModelDoneEvent
+}
+
+package "council_langgraph" <<backend>> {
+
+  class "api" as ApiModule <<module>> {
+    +app: FastAPI
+    +get_config(): CouncilConfig
+    +lifespan(app)
+    +ask(question, config): CouncilResult
+    +ask_streaming(question, config): StreamingResponse
+  }
+
+  class "council" as CouncilModule <<module>> {
+    +ROUND_TRACE = "round_1"
+    +SYNTHESIS_SPAN = "synthesis"
+    +ask_council(config, question): CouncilResult
+    +ask_council_streaming(config, question): AsyncIterator[CouncilStreamEvent]
+  }
+
+  class SynthesisTraceInput <<TypedDict>> {
+    +question: str
+    +responses: list[ModelResponse]
+  }
+
+  class "fanout" as FanoutModule <<module>> {
+    +build_chat_model(model_config): BaseChatModel
+    +fanout_question(config, question): list[ModelResponse]
+    +stream_question(config, question): AsyncIterator[ModelStreamEvent]
+  }
+
+  class ChatModelKwargs <<TypedDict>> {
+    +api_key: str
+    +base_url: str
+  }
+
+  interface ModelStreamEvent <<union>>
+
+  class "synthesis" as SynthesisModule <<module>> {
+    +synthesizer_effective_config(config, synthesizer_override): ModelConfig
+    +council_synthesised_answer(config, question, responses, synthesizer_model_override): CouncilSynthesis
+  }
+
+  class SynthesisError <<exception>>
+  class UnknownSynthesizerError <<exception>>
+  class NoResponsesToSynthesizeError <<exception>>
+  class SynthesizerCallError <<exception>>
+
+  class "tracing" as TracingModule <<module>> {
+    +new_session_id(): str
+    +council_session(session_id)
+    +council_trace(name, input): LangfuseSpan
+    +traced_run_config(run_name): RunnableConfig
+    +shutdown_tracing()
+  }
+}
+
+package "external" <<third-party>> {
+  class FastAPI
+  class "BaseChatModel\n(langchain)" as BaseChatModel
+  class "Langfuse" as Langfuse
+}
+
+' ---- exceptions
+SynthesisError <|-- UnknownSynthesizerError
+SynthesisError <|-- NoResponsesToSynthesizeError
+SynthesisError <|-- SynthesizerCallError
+
+' ---- backend dependencies
+ApiModule ..> CouncilModule : ask_council\nask_council_streaming
+ApiModule ..> ConfigModule : load_config
+ApiModule ..> TracingModule : shutdown_tracing
+ApiModule ..> SynthesisError : maps to 502
+ApiModule ..> CouncilResult
+ApiModule ..> CouncilStreamEvent : serialises as SSE
+ApiModule --> FastAPI
+
+CouncilModule ..> FanoutModule : fanout_question\nstream_question
+CouncilModule ..> SynthesisModule : council_synthesised_answer
+CouncilModule ..> TracingModule : session + trace spans
+CouncilModule ..> SynthesisTraceInput
+CouncilModule ..> CouncilResult : builds
+CouncilModule ..> CouncilStreamEvent : yields
+CouncilModule ..> SynthesisError : catches (streaming)
+
+FanoutModule ..> ModelConfig
+FanoutModule ..> ChatModelKwargs
+FanoutModule ..> ModelResponse : produces
+FanoutModule ..> ModelStreamEvent : produces
+FanoutModule ..> TracingModule : traced_run_config
+FanoutModule ..> BaseChatModel : init_chat_model
+
+SynthesisModule ..> FanoutModule : build_chat_model
+SynthesisModule ..> PromptsModule
+SynthesisModule ..> TracingModule : traced_run_config
+SynthesisModule ..> CouncilSynthesis : structured output
+SynthesisModule ..> SynthesisError : raises
+
+TracingModule --> Langfuse
+
+
+ModelStreamEvent <|.. ModelTokenEvent
+ModelStreamEvent <|.. ModelDoneEvent
+
+legend right
+  |= Arrow |= Meaning |
+  | A *-- B | A owns B (composition) |
+  | A o-- B | A holds B (aggregation) |
+  | A <|-- B | B inherits from A |
+  | A <|.. B | B is a member of union A |
+  | A ..> B | A uses B (label: what it calls or produces) |
+  | A --> B | A depends on external B |
+  |= Stereotype |= Meaning |
+  | <<pydantic>> | Pydantic model |
+  | <<dataclass>> | Dataclass event |
+  | <<TypedDict>> | Typed dict boundary |
+  | <<module>> | Python module of functions |
+  | <<union>> | Union type alias |
+  | <<exception>> | Exception class |
+endlegend
+
+@enduml

@@ -7,7 +7,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from core.config import CouncilConfig, ModelConfig
 from core.prompts import SYNTHESIS_SYSTEM_PROMPT, synthesis_input
-from core.types import CouncilSynthesis, ModelResponse
+from core.domain import CouncilSynthesis, ModelResponse
 
 from council_langgraph.fanout import build_chat_model
 from council_langgraph.tracing import traced_run_config

@@ -1,0 +1,148 @@
+@startuml core-class-diagram
+title AI Council — core package
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype polyline
+hide empty members
+
+package "core.config" <<core>> {
+  class ModelConfig <<pydantic>> {
+    +id: str
+    +api_key_env: str | None
+    +base_url: str | None
+    +enabled: bool
+  }
+
+  class CouncilConfig <<pydantic>> {
+    +default_synthesizer: str
+    +models: list[ModelConfig]
+    +enabled_models: list[ModelConfig]
+  }
+
+  class "config" as ConfigModule <<module>> {
+    +load_config(path): CouncilConfig
+  }
+}
+
+package "core.domain" <<core>> {
+  class Disagreement <<pydantic>> {
+    +point: str
+    +models_for: list[str]
+    +models_against: list[str]
+  }
+
+  class ModelInsights <<pydantic>> {
+    +model_id: str
+    +insights: list[str]
+  }
+
+  class Verdict <<pydantic>> {
+    +strongest: str
+    +weakest: str
+    +justification: str
+  }
+
+  class CouncilSynthesis <<pydantic>> {
+    +summary: str
+    +consensus: list[str]
+    +disagreements: list[Disagreement]
+    +verdict: Verdict
+    +unique_insights: list[ModelInsights]
+    +blind_spots: list[str]
+    +takeaways: list[str]
+  }
+
+  class ModelResponse <<pydantic>> {
+    +model_id: str
+    +response: str
+    +error: str | None
+  }
+
+  class CouncilResult <<pydantic>> {
+    +session_id: str
+    +question: str
+    +created_at: datetime
+    +model_responses: list[ModelResponse]
+    +synthesis: CouncilSynthesis
+  }
+}
+
+package "core.events" <<core>> {
+  class SessionStartEvent <<dataclass>> {
+    +session_id: str
+    {static} +event = "session_start"
+  }
+
+  class ModelTokenEvent <<dataclass>> {
+    +model_id: str
+    +token: str
+    {static} +event = "model_token"
+  }
+
+  class ModelDoneEvent <<dataclass>> {
+    +model_id: str
+    +response: str
+    +error: str | None
+    {static} +event = "model_done"
+  }
+
+  class SynthDoneEvent <<dataclass>> {
+    +synthesis: CouncilSynthesis
+    {static} +event = "synth_done"
+  }
+
+  class ErrorEvent <<dataclass>> {
+    +message: str
+    {static} +event = "error"
+  }
+
+  interface CouncilStreamEvent <<union>>
+}
+
+package "core.prompts" <<core>> {
+  class "prompts" as PromptsModule <<module>> {
+    +SYNTHESIS_SYSTEM_PROMPT: str
+    +synthesis_input(question, successful_responses): str
+  }
+}
+
+' ---- core.config
+CouncilConfig "1" *-- "1..*" ModelConfig : models
+ConfigModule ..> CouncilConfig : loads config.yaml
+
+' ---- core.domain
+CouncilSynthesis *-- "*" Disagreement
+CouncilSynthesis *-- "*" ModelInsights
+CouncilSynthesis *-- "1" Verdict
+CouncilResult *-- "*" ModelResponse
+CouncilResult *-- "1" CouncilSynthesis
+' ---- core.events
+SynthDoneEvent o-- CouncilSynthesis
+
+CouncilStreamEvent <|.. SessionStartEvent
+CouncilStreamEvent <|.. ModelTokenEvent
+CouncilStreamEvent <|.. ModelDoneEvent
+CouncilStreamEvent <|.. SynthDoneEvent
+CouncilStreamEvent <|.. ErrorEvent
+
+PromptsModule ..> ModelResponse
+
+legend right
+  |= Arrow |= Meaning |
+  | A *-- B | A owns B (composition) |
+  | A o-- B | A holds B (aggregation) |
+  | A <|-- B | B inherits from A |
+  | A <|.. B | B is a member of union A |
+  | A ..> B | A uses B (label: what it calls or produces) |
+  | A --> B | A depends on external B |
+  |= Stereotype |= Meaning |
+  | <<pydantic>> | Pydantic model |
+  | <<dataclass>> | Dataclass event |
+  | <<TypedDict>> | Typed dict boundary |
+  | <<module>> | Python module of functions |
+  | <<union>> | Union type alias |
+  | <<exception>> | Exception class |
+endlegend
+
+@enduml

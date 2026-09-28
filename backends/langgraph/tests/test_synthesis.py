@@ -4,7 +4,7 @@ from pydantic import ValidationError
 
 from council_langgraph import synthesis
 from core.config import CouncilConfig, ModelConfig
-from core.types import CouncilSynthesis, Disagreement, ModelInsights, ModelResponse, Verdict
+from core.domain import CouncilSynthesis, Disagreement, ModelInsights, ModelResponse, Verdict
 
 CONFIG: CouncilConfig = CouncilConfig(
     default_synthesizer="openai:gpt-4o",
