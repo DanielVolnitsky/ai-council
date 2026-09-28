@@ -68,6 +68,23 @@ def test_missing_file_raises_file_not_found():
         load_config("/nonexistent/path/config.yaml")
 
 
+def test_api_key_is_read_from_the_named_env_var(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-123")
+
+    assert ModelConfig(id="openai:gpt-4o", api_key_env="OPENAI_API_KEY").api_key == "sk-test-123"
+
+
+def test_api_key_is_none_without_an_env_var_name():
+    assert ModelConfig(id="ollama:llama3").api_key is None
+
+
+def test_missing_api_key_env_var_raises(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    with pytest.raises(KeyError, match="OPENAI_API_KEY"):
+        ModelConfig(id="openai:gpt-4o", api_key_env="OPENAI_API_KEY").api_key
+
+
 def test_ollama_model_without_api_key_env_is_valid(tmp_path):
     yaml_content = """\
 default_synthesizer: ollama:llama3

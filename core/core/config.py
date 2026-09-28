@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import yaml
@@ -11,6 +12,10 @@ class ModelConfig(BaseModel):
     api_key_env: str | None = None
     base_url: str | None = None
     enabled: bool = True
+
+    @property
+    def api_key(self) -> str | None:
+        return None if self.api_key_env is None else os.environ[self.api_key_env]
 
 
 class CouncilConfig(BaseModel):

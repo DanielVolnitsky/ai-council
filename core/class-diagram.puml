@@ -12,6 +12,7 @@ package "core.config" <<core>> {
     +api_key_env: str | None
     +base_url: str | None
     +enabled: bool
+    +api_key: str | None
   }
 
   class CouncilConfig <<pydantic>> {
@@ -26,6 +27,10 @@ package "core.config" <<core>> {
 }
 
 package "core.domain" <<core>> {
+  class Question <<Annotated>> {
+    str, non-blank
+  }
+
   class Disagreement <<pydantic>> {
     +point: str
     +models_for: list[str]
@@ -85,6 +90,7 @@ package "core.events" <<core>> {
     +response: str
     +error: str | None
     {static} +event = "model_done"
+    +to_model_response(): ModelResponse
   }
 
   class SynthDoneEvent <<dataclass>> {
@@ -97,13 +103,43 @@ package "core.events" <<core>> {
     {static} +event = "error"
   }
 
+  interface ModelStreamEvent <<union>>
   interface CouncilStreamEvent <<union>>
+
+  class "events" as EventsModule <<module>> {
+    +sse_message(event): str
+  }
 }
 
 package "core.prompts" <<core>> {
   class "prompts" as PromptsModule <<module>> {
     +SYNTHESIS_SYSTEM_PROMPT: str
     +synthesis_input(question, successful_responses): str
+  }
+}
+
+package "core.synthesis" <<core>> {
+  class "synthesis" as SynthesisModule <<module>> {
+    +synthesizer_effective_config(config, synthesizer_override): ModelConfig
+    +responses_to_synthesize(responses): list[ModelResponse]
+  }
+
+  class SynthesisError <<exception>>
+  class UnknownSynthesizerError <<exception>>
+  class NoResponsesToSynthesizeError <<exception>>
+  class SynthesizerCallError <<exception>>
+}
+
+package "core.tracing" <<core>> {
+  class "tracing" as TracingModule <<module>> {
+    +ROUND_TRACE = "round_1"
+    +SYNTHESIS_SPAN = "synthesis"
+    +new_session_id(): str
+  }
+
+  class SynthesisTraceInput <<TypedDict>> {
+    +question: str
+    +responses: list[ModelResponse]
   }
 }
 
@@ -125,6 +161,22 @@ CouncilStreamEvent <|.. ModelTokenEvent
 CouncilStreamEvent <|.. ModelDoneEvent
 CouncilStreamEvent <|.. SynthDoneEvent
 CouncilStreamEvent <|.. ErrorEvent
+ModelStreamEvent <|.. ModelTokenEvent
+ModelStreamEvent <|.. ModelDoneEvent
+ModelDoneEvent ..> ModelResponse : converts to
+EventsModule ..> CouncilStreamEvent : serialises as SSE
+
+' ---- core.synthesis
+SynthesisError <|-- UnknownSynthesizerError
+SynthesisError <|-- NoResponsesToSynthesizeError
+SynthesisError <|-- SynthesizerCallError
+SynthesisModule ..> CouncilConfig
+SynthesisModule ..> ModelResponse : filters
+SynthesisModule ..> UnknownSynthesizerError : raises
+SynthesisModule ..> NoResponsesToSynthesizeError : raises
+
+' ---- core.tracing
+SynthesisTraceInput o-- ModelResponse
 
 PromptsModule ..> ModelResponse
 
@@ -142,6 +194,7 @@ legend right
   | <<TypedDict>> | Typed dict boundary |
   | <<module>> | Python module of functions |
   | <<union>> | Union type alias |
+  | <<Annotated>> | Constrained type alias |
   | <<exception>> | Exception class |
 endlegend
 

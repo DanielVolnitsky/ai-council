@@ -5,7 +5,6 @@ from fastapi.testclient import TestClient
 
 from council_langgraph import council
 from council_langgraph.api import app, get_config
-from council_langgraph.synthesis import SynthesisError
 from core.config import CouncilConfig, ModelConfig
 from core.domain import (
     CouncilSynthesis,
@@ -14,6 +13,7 @@ from core.domain import (
     ModelResponse,
     Verdict,
 )
+from core.synthesis import SynthesisError
 
 CONFIG: CouncilConfig = CouncilConfig(
     default_synthesizer="openai:gpt-4o",

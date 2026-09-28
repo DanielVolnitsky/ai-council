@@ -14,12 +14,18 @@ package "core" <<core>> {
   class ModelResponse
   class CouncilSynthesis
   class CouncilResult
+  class Question
+  class "synthesis" as CoreSynthesisModule <<module>>
+  class SynthesisError <<exception>>
+  class "tracing" as CoreTracingModule <<module>>
 }
 
 package "core.events" <<core>> {
   interface CouncilStreamEvent <<union>>
   class ModelTokenEvent
   class ModelDoneEvent
+  interface ModelStreamEvent <<union>>
+  class "events" as EventsModule <<module>>
 }
 
 package "council_langgraph" <<backend>> {
@@ -28,20 +34,13 @@ package "council_langgraph" <<backend>> {
     +app: FastAPI
     +get_config(): CouncilConfig
     +lifespan(app)
-    +ask(question, config): CouncilResult
-    +ask_streaming(question, config): StreamingResponse
+    +ask(question: Question, config): CouncilResult
+    +ask_streaming(question: Question, config): StreamingResponse
   }
 
   class "council" as CouncilModule <<module>> {
-    +ROUND_TRACE = "round_1"
-    +SYNTHESIS_SPAN = "synthesis"
     +ask_council(config, question): CouncilResult
     +ask_council_streaming(config, question): AsyncIterator[CouncilStreamEvent]
-  }
-
-  class SynthesisTraceInput <<TypedDict>> {
-    +question: str
-    +responses: list[ModelResponse]
   }
 
   class "fanout" as FanoutModule <<module>> {
@@ -55,20 +54,11 @@ package "council_langgraph" <<backend>> {
     +base_url: str
   }
 
-  interface ModelStreamEvent <<union>>
-
   class "synthesis" as SynthesisModule <<module>> {
-    +synthesizer_effective_config(config, synthesizer_override): ModelConfig
     +council_synthesised_answer(config, question, responses, synthesizer_model_override): CouncilSynthesis
   }
 
-  class SynthesisError <<exception>>
-  class UnknownSynthesizerError <<exception>>
-  class NoResponsesToSynthesizeError <<exception>>
-  class SynthesizerCallError <<exception>>
-
   class "tracing" as TracingModule <<module>> {
-    +new_session_id(): str
     +council_session(session_id)
     +council_trace(name, input): LangfuseSpan
     +traced_run_config(run_name): RunnableConfig
@@ -82,30 +72,27 @@ package "external" <<third-party>> {
   class "Langfuse" as Langfuse
 }
 
-' ---- exceptions
-SynthesisError <|-- UnknownSynthesizerError
-SynthesisError <|-- NoResponsesToSynthesizeError
-SynthesisError <|-- SynthesizerCallError
-
 ' ---- backend dependencies
 ApiModule ..> CouncilModule : ask_council\nask_council_streaming
 ApiModule ..> ConfigModule : load_config
 ApiModule ..> TracingModule : shutdown_tracing
 ApiModule ..> SynthesisError : maps to 502
 ApiModule ..> CouncilResult
-ApiModule ..> CouncilStreamEvent : serialises as SSE
+ApiModule ..> EventsModule : sse_message
+ApiModule ..> Question
 ApiModule --> FastAPI
 
 CouncilModule ..> FanoutModule : fanout_question\nstream_question
 CouncilModule ..> SynthesisModule : council_synthesised_answer
 CouncilModule ..> TracingModule : session + trace spans
-CouncilModule ..> SynthesisTraceInput
+CouncilModule ..> CoreTracingModule : new_session_id\ntrace names
+CouncilModule ..> ModelDoneEvent : to_model_response
 CouncilModule ..> CouncilResult : builds
 CouncilModule ..> CouncilStreamEvent : yields
 CouncilModule ..> SynthesisError : catches (streaming)
 
-FanoutModule ..> ModelConfig
 FanoutModule ..> ChatModelKwargs
+FanoutModule ..> ModelConfig : api_key
 FanoutModule ..> ModelResponse : produces
 FanoutModule ..> ModelStreamEvent : produces
 FanoutModule ..> TracingModule : traced_run_config
@@ -115,13 +102,10 @@ SynthesisModule ..> FanoutModule : build_chat_model
 SynthesisModule ..> PromptsModule
 SynthesisModule ..> TracingModule : traced_run_config
 SynthesisModule ..> CouncilSynthesis : structured output
-SynthesisModule ..> SynthesisError : raises
+SynthesisModule ..> CoreSynthesisModule : synthesizer_effective_config\nresponses_to_synthesize
+SynthesisModule ..> SynthesisError : raises SynthesizerCallError
 
 TracingModule --> Langfuse
-
-
-ModelStreamEvent <|.. ModelTokenEvent
-ModelStreamEvent <|.. ModelDoneEvent
 
 legend right
   |= Arrow |= Meaning |

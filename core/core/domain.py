@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, StringConstraints
+
+Question = Annotated[str, StringConstraints(min_length=1, pattern=r"\S")]
 
 
 class Disagreement(BaseModel):

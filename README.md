@@ -24,7 +24,7 @@ A multimodel deliberation tool that sends your question to N language models fro
 Monorepo with a LangGraph backend sharing a common core:
 
 ```
-core/              # Shared: models, config, synthesis prompt
+core/              # Shared: models, config, events + SSE format, synthesis prompt + rules, trace names
 backends/
   langgraph/       # Provider fan-out; LangGraph orchestration planned
 frontend/          # React (Vite) SPA — not built yet

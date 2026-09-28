@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import ClassVar
 
-from core.domain import CouncilSynthesis
+from pydantic import TypeAdapter
+
+from core.domain import CouncilSynthesis, ModelResponse
 
 
 @dataclass
@@ -26,6 +28,9 @@ class ModelDoneEvent:
     error: str | None = None
     event: ClassVar[str] = "model_done"
 
+    def to_model_response(self) -> ModelResponse:
+        return ModelResponse(model_id=self.model_id, response=self.response, error=self.error)
+
 
 @dataclass
 class SynthDoneEvent:
@@ -39,6 +44,15 @@ class ErrorEvent:
     event: ClassVar[str] = "error"
 
 
+ModelStreamEvent = ModelTokenEvent | ModelDoneEvent
+
 CouncilStreamEvent = (
     SessionStartEvent | ModelTokenEvent | ModelDoneEvent | SynthDoneEvent | ErrorEvent
 )
+
+_STREAM_EVENT_ADAPTER: TypeAdapter[CouncilStreamEvent] = TypeAdapter(CouncilStreamEvent)
+
+
+def sse_message(event: CouncilStreamEvent) -> str:
+    data: str = _STREAM_EVENT_ADAPTER.dump_json(event).decode()
+    return f"event: {event.event}\ndata: {data}\n\n"

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import os
 from collections.abc import AsyncIterator
 from typing import TypedDict, cast
 
@@ -10,7 +9,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
 
 from core.config import CouncilConfig, ModelConfig
-from core.events import ModelDoneEvent, ModelTokenEvent
+from core.events import ModelDoneEvent, ModelStreamEvent, ModelTokenEvent
 from core.domain import ModelResponse
 
 from council_langgraph.tracing import traced_run_config
@@ -23,8 +22,9 @@ class ChatModelKwargs(TypedDict, total=False):
 
 def build_chat_model(model_config: ModelConfig) -> BaseChatModel:
     kwargs: ChatModelKwargs = {}
-    if model_config.api_key_env is not None:
-        kwargs["api_key"] = os.environ[model_config.api_key_env]
+    api_key: str | None = model_config.api_key
+    if api_key is not None:
+        kwargs["api_key"] = api_key
     if model_config.base_url is not None:
         kwargs["base_url"] = model_config.base_url
 
@@ -51,9 +51,6 @@ async def fanout_question(config: CouncilConfig, question: str) -> list[ModelRes
     return await asyncio.gather(
         *(_ask_model(model_config, question) for model_config in config.enabled_models)
     )
-
-
-ModelStreamEvent = ModelTokenEvent | ModelDoneEvent
 
 
 async def _stream_model(

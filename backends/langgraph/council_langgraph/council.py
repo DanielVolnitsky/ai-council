@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from datetime import datetime, timezone
-from typing import TypedDict
 
 from core.config import CouncilConfig
 from core.events import (
@@ -13,19 +12,12 @@ from core.events import (
     SynthDoneEvent,
 )
 from core.domain import CouncilResult, CouncilSynthesis, ModelResponse
+from core.synthesis import SynthesisError
+from core.tracing import ROUND_TRACE, SYNTHESIS_SPAN, SynthesisTraceInput, new_session_id
 
 from council_langgraph.fanout import fanout_question, stream_question
-from council_langgraph.synthesis import SynthesisError, council_synthesised_answer
-from council_langgraph.tracing import council_session, council_trace, new_session_id
-
-
-class SynthesisTraceInput(TypedDict):
-    question: str
-    responses: list[ModelResponse]
-
-
-ROUND_TRACE: str = "round_1"
-SYNTHESIS_SPAN: str = "synthesis"
+from council_langgraph.synthesis import council_synthesised_answer
+from council_langgraph.tracing import council_session, council_trace
 
 
 async def ask_council(config: CouncilConfig, question: str) -> CouncilResult:
@@ -58,13 +50,7 @@ async def ask_council_streaming(
         async for event in stream_question(config, question):
             yield event
             if isinstance(event, ModelDoneEvent):
-                responses.append(
-                    ModelResponse(
-                        model_id=event.model_id,
-                        response=event.response,
-                        error=event.error,
-                    )
-                )
+                responses.append(event.to_model_response())
 
         try:
             synthesis: CouncilSynthesis = await _traced_synthesis(config, question, responses)

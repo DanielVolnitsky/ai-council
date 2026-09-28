@@ -8,14 +8,13 @@ from typing import Annotated
 from dotenv import load_dotenv
 from fastapi import Body, Depends, FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import TypeAdapter
 
 from core.config import CouncilConfig, load_config
-from core.events import CouncilStreamEvent
-from core.domain import CouncilResult
+from core.events import sse_message
+from core.domain import CouncilResult, Question
+from core.synthesis import SynthesisError
 
 from council_langgraph.council import ask_council, ask_council_streaming
-from council_langgraph.synthesis import SynthesisError
 from council_langgraph.tracing import shutdown_tracing
 
 
@@ -41,27 +40,19 @@ async def _synthesis_error_handler(request: Request, exc: SynthesisError) -> JSO
 
 @app.post("/api/council/ask", response_model=CouncilResult)
 async def ask(
-    question: Annotated[str, Body(embed=True, min_length=1, pattern=r"\S")],
+    question: Annotated[Question, Body(embed=True)],
     config: CouncilConfig = Depends(get_config),
 ) -> CouncilResult:
     return await ask_council(config, question)
 
 
-_STREAM_EVENT_ADAPTER: TypeAdapter[CouncilStreamEvent] = TypeAdapter(CouncilStreamEvent)
-
-
-def _sse_message(event: CouncilStreamEvent) -> str:
-    data: str = _STREAM_EVENT_ADAPTER.dump_json(event).decode()
-    return f"event: {event.event}\ndata: {data}\n\n"
-
-
 @app.post("/api/council/ask/stream")
 async def ask_streaming(
-    question: Annotated[str, Body(embed=True, min_length=1, pattern=r"\S")],
+    question: Annotated[Question, Body(embed=True)],
     config: CouncilConfig = Depends(get_config),
 ) -> StreamingResponse:
     async def messages() -> AsyncIterator[str]:
         async for event in ask_council_streaming(config, question):
-            yield _sse_message(event)
+            yield sse_message(event)
 
     return StreamingResponse(messages(), media_type="text/event-stream")

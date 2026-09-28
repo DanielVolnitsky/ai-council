@@ -3,15 +3,10 @@ from __future__ import annotations
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
-from uuid import uuid4
 
 from langchain_core.runnables import RunnableConfig
 from langfuse import Langfuse, LangfuseSpan, get_client, propagate_attributes
 from langfuse.langchain import CallbackHandler
-
-
-def new_session_id() -> str:
-    return str(uuid4())
 
 
 @contextmanager
