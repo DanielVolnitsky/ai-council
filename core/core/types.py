@@ -41,10 +41,17 @@ class ModelResponse(BaseModel):
 
 
 class CouncilResult(BaseModel):
+    session_id: str
     question: str
     created_at: datetime
     model_responses: list[ModelResponse]
     synthesis: CouncilSynthesis
+
+
+@dataclass
+class SessionStartEvent:
+    session_id: str
+    event: ClassVar[str] = "session_start"
 
 
 @dataclass
@@ -74,4 +81,6 @@ class ErrorEvent:
     event: ClassVar[str] = "error"
 
 
-CouncilStreamEvent = ModelTokenEvent | ModelDoneEvent | SynthDoneEvent | ErrorEvent
+CouncilStreamEvent = (
+    SessionStartEvent | ModelTokenEvent | ModelDoneEvent | SynthDoneEvent | ErrorEvent
+)

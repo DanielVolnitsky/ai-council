@@ -2,10 +2,12 @@ import asyncio
 import json
 from collections.abc import AsyncIterator
 from typing import Callable, TypedDict
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessageChunk
+from langchain_core.runnables import RunnableConfig
 
 from council_langgraph import council, fanout
 from council_langgraph.api import app, get_config
@@ -19,6 +21,7 @@ from core.types import (
     ModelDoneEvent,
     ModelInsights,
     ModelTokenEvent,
+    SessionStartEvent,
     SynthDoneEvent,
     Verdict,
 )
@@ -58,7 +61,9 @@ class StubStreamingChatModel:
         self._tokens: list[str] = tokens or []
         self._error: Exception | None = error
 
-    async def astream(self, question: str) -> AsyncIterator[AIMessageChunk]:
+    async def astream(
+        self, question: str, config: RunnableConfig
+    ) -> AsyncIterator[AIMessageChunk]:
         if self._error is not None:
             raise self._error
         for token in self._tokens:
@@ -152,7 +157,9 @@ async def test_stream_council_ends_with_the_synthesis(monkeypatch):
         council.ask_council_streaming(CONFIG, "is it worth it?")
     )
 
-    assert events == FANOUT_EVENTS + [SynthDoneEvent(synthesis=SYNTHESIS)]
+    assert isinstance(events[0], SessionStartEvent)
+    assert UUID(events[0].session_id)
+    assert events[1:] == FANOUT_EVENTS + [SynthDoneEvent(synthesis=SYNTHESIS)]
 
 
 async def test_stream_council_ends_with_an_error_event_when_synthesis_fails(monkeypatch):
@@ -167,7 +174,8 @@ async def test_stream_council_ends_with_an_error_event_when_synthesis_fails(monk
         council.ask_council_streaming(CONFIG, "is it worth it?")
     )
 
-    assert events == FANOUT_EVENTS + [
+    assert isinstance(events[0], SessionStartEvent)
+    assert events[1:] == FANOUT_EVENTS + [
         ErrorEvent(message="synthesizer 'openai:gpt-4o' failed")
     ]
 
@@ -205,7 +213,10 @@ def test_stream_endpoint_emits_one_sse_message_per_event(client, monkeypatch):
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/event-stream")
-    assert parse_sse(response.text) == [
+    messages: list[SseMessage] = parse_sse(response.text)
+    assert messages[0]["event"] == "session_start"
+    assert UUID(messages[0]["data"]["session_id"])
+    assert messages[1:] == [
         {"event": "model_token", "data": {"model_id": "openai:gpt-4o", "token": "gpt says yes"}},
         {
             "event": "model_done",

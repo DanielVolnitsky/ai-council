@@ -1,4 +1,5 @@
 import pytest
+from langchain_core.runnables import RunnableConfig
 from pydantic import ValidationError
 
 from council_langgraph import synthesis
@@ -48,7 +49,7 @@ class StubStructuredModel:
         self._error: Exception | None = error
         self.received_messages: list = []
 
-    async def ainvoke(self, messages: list) -> CouncilSynthesis:
+    async def ainvoke(self, messages: list, config: RunnableConfig) -> CouncilSynthesis:
         self.received_messages = messages
         if self._error is not None:
             raise self._error

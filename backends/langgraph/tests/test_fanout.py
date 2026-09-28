@@ -2,6 +2,7 @@ from typing import Callable, TypedDict
 
 import pytest
 from langchain_core.messages import AIMessage
+from langchain_core.runnables import RunnableConfig
 
 from council_langgraph import fanout
 from core.config import CouncilConfig, ModelConfig
@@ -22,7 +23,7 @@ class StubChatModel:
         self._reply: AIMessage | None = reply
         self._error: Exception | None = error
 
-    async def ainvoke(self, question: str) -> AIMessage:
+    async def ainvoke(self, question: str, config: RunnableConfig) -> AIMessage:
         if self._error is not None:
             raise self._error
         return self._reply

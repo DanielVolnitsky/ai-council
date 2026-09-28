@@ -12,6 +12,8 @@ from langchain_core.messages import AIMessage
 from core.config import CouncilConfig, ModelConfig
 from core.types import ModelDoneEvent, ModelResponse, ModelTokenEvent
 
+from council_langgraph.tracing import traced_run_config
+
 
 class ChatModelKwargs(TypedDict, total=False):
     api_key: str
@@ -31,7 +33,9 @@ def build_chat_model(model_config: ModelConfig) -> BaseChatModel:
 async def _ask_model(model_config: ModelConfig, question: str) -> ModelResponse:
     try:
         chat_model: BaseChatModel = build_chat_model(model_config)
-        message: AIMessage = await chat_model.ainvoke(question)
+        message: AIMessage = await chat_model.ainvoke(
+            question, config=traced_run_config(model_config.id)
+        )
     except Exception as exc:
         return ModelResponse(
             model_id=model_config.id,
@@ -60,7 +64,7 @@ async def _stream_model(
     error: str | None = None
     try:
         chat_model: BaseChatModel = build_chat_model(model_config)
-        async for chunk in chat_model.astream(question):
+        async for chunk in chat_model.astream(question, config=traced_run_config(model_config.id)):
             token: str = cast(str, chunk.content)
             if not token:
                 continue

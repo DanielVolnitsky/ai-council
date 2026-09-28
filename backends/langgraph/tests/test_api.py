@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -84,6 +86,7 @@ def test_ask_returns_responses_and_synthesis(client, monkeypatch):
 
     assert response.status_code == 200
     body: dict = response.json()
+    assert UUID(body["session_id"])
     assert body["question"] == "is it worth it?"
     assert body["model_responses"] == [
         {"model_id": "openai:gpt-4o", "response": "gpt says yes", "error": None},

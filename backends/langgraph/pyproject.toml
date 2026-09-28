@@ -23,6 +23,7 @@ dependencies = [
     "fastapi>=0.115",            # HTTP layer for the council API
     "uvicorn>=0.32",             # ASGI server used to run that app
     "python-dotenv>=1.0",        # Loads .env so API keys reach os.environ without a shell export
+    "langfuse>=4.0,<5",          # Tracing — LangChain CallbackHandler plus the OTel-based client
 ]
 
 [tool.uv.sources]

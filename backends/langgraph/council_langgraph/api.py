@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from functools import lru_cache
 from typing import Annotated
 
@@ -14,15 +15,22 @@ from core.types import CouncilResult, CouncilStreamEvent
 
 from council_langgraph.council import ask_council, ask_council_streaming
 from council_langgraph.synthesis import SynthesisError
+from council_langgraph.tracing import shutdown_tracing
 
 
 @lru_cache(maxsize=1)
 def get_config() -> CouncilConfig:
-    load_dotenv()
     return load_config()
 
 
-app: FastAPI = FastAPI(title="AI Council")
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    load_dotenv()
+    yield
+    shutdown_tracing()
+
+
+app: FastAPI = FastAPI(title="AI Council", lifespan=lifespan)
 
 
 @app.exception_handler(SynthesisError)

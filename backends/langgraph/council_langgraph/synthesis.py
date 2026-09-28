@@ -10,6 +10,7 @@ from core.prompts import SYNTHESIS_SYSTEM_PROMPT, synthesis_input
 from core.types import CouncilSynthesis, ModelResponse
 
 from council_langgraph.fanout import build_chat_model
+from council_langgraph.tracing import traced_run_config
 
 
 class SynthesisError(Exception):
@@ -72,7 +73,9 @@ async def council_synthesised_answer(
         structured = chat_model.with_structured_output(
             CouncilSynthesis, method="function_calling"
         )
-        synthesis = await structured.ainvoke(messages)
+        synthesis = await structured.ainvoke(
+            messages, config=traced_run_config(synthesizer_config.id)
+        )
     except Exception as exc:
         raise SynthesizerCallError(
             f"synthesizer '{synthesizer_config.id}' failed: {type(exc).__name__}: {exc}"

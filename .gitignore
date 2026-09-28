@@ -40,9 +40,6 @@ frontend/.env.*.local
 # Logs
 *.log
 
-# Docker (Langfuse volumes)
-docker-data/
-
 # IDE
 .idea/
 .run/
