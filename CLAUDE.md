@@ -36,3 +36,7 @@ When committing changes, use the following format:
 
 **Format:** `<one-sentence change description describing what, why, and how>`
  
+## End-to-End Testing
+
+- A Playwright MCP server is configured in `.mcp.json`; use it to test changes end-to-end through the real web UI (e.g. open `http://localhost:5173`, ask a question, wait for the synthesis) rather than relying on unit tests alone.
+- The backend (`uvicorn` on :8000) and the frontend dev server (Vite on :5173) must be running; restart the backend after installing or upgrading packages, since `--reload` only watches source files.
