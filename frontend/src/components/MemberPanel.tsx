@@ -42,7 +42,7 @@ function MemberBody({ member }: MemberPanelProps) {
   }
   // A model can succeed with an empty reply, so "empty" only means "thinking" while still streaming.
   if (member.text === "") {
-    return <p className="muted">{member.status === "streaming" ? "Thinking…" : "No answer."}</p>;
+    return member.status === "streaming" ? <ThinkingDots /> : <p className="muted">No answer.</p>;
   }
   // react-markdown parses the Markdown into React elements (it never uses
   // innerHTML, so model output cannot inject script tags). It re-parses the
@@ -51,5 +51,16 @@ function MemberBody({ member }: MemberPanelProps) {
     <div className="markdown">
       <Markdown>{member.text}</Markdown>
     </div>
+  );
+}
+
+// The dots are decorative, so screen readers get the label instead.
+function ThinkingDots() {
+  return (
+    <span className="thinking-dots" role="status" aria-label="Thinking">
+      <span />
+      <span />
+      <span />
+    </span>
   );
 }
