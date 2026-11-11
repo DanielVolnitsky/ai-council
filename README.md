@@ -4,7 +4,7 @@ A multimodel deliberation tool that sends your question to N language models fro
 
 ## How It Works
 
-1. User submits a question (via CLI or web UI)
+1. User submits a question (via the web UI or the HTTP API)
 2. The question is sent to all configured models in parallel (async)
 3. Each model's response streams back in real-time
 4. A configurable synthesizer model analyzes all responses and produces a structured document
@@ -27,14 +27,14 @@ Monorepo with a LangGraph backend sharing a common core:
 core/              # Shared: models, config, events + SSE format, synthesis prompt + rules, trace names
 backends/
   langgraph/       # Provider fan-out; LangGraph orchestration planned
-frontend/          # React (Vite) SPA — not built yet
+frontend/          # React + Vite + TypeScript page that runs one round over the SSE stream
 ```
 
 ### Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React + Vite |
+| Frontend | React + Vite + TypeScript |
 | Backend | FastAPI (Python) |
 | Provider abstraction | LangChain (`init_chat_model`) |
 | Orchestration | LangGraph _(planned)_ |
@@ -210,7 +210,26 @@ directly, so breakpoints bind, and `curl` then blocks on your breakpoints. Omit
 `--reload` when debugging — reload runs the app in a forked child whose
 breakpoints never bind.
 
-### 6. Run the tests
+### 6. Open the web UI
+
+```bash
+cd frontend
+npm install        # first time, or after package.json changes
+npm run dev
+```
+
+Open http://localhost:5173 with the API from step 5 still running. Vite's dev
+server proxies every `/api` request to `127.0.0.1:8000`, so the backend needs no
+CORS setup. The page reads `/api/council/ask/stream` with `fetch` rather than
+`EventSource`, because `EventSource` can only issue GET requests.
+
+The page shows only what the API supports: there is no model or synthesizer
+picker, since a round's composition is a `config.yaml` decision. Member panels
+appear as each member starts streaming, and the session id at the bottom links
+to the round in a local Langfuse. `npm test` runs the SSE parser's unit tests,
+and `npm run build` type-checks and bundles into `frontend/dist/`.
+
+### 7. Run the tests
 
 ```bash
 uv run --group dev pytest

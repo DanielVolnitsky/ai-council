@@ -1,0 +1,26 @@
+{
+  // TypeScript here only type-checks; it never writes .js files ("noEmit").
+  // Vite strips the types itself when serving or bundling, which is why
+  // `npm run build` runs `tsc` purely as a gate before `vite build`.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    // "bundler" resolves imports the way Vite does: bare package names come from
+    // node_modules, and relative imports may omit the file extension.
+    "moduleResolution": "bundler",
+    // Compile JSX with React's automatic runtime, so components need no `import React`.
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    // Each file must be compilable on its own, because Vite transforms files one at a time.
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    // Ambient types for Vite-specific things, such as importing a .css file from TS.
+    "types": ["vite/client"]
+  },
+  "include": ["src", "vite.config.ts"]
+}

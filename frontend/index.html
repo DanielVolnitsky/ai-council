@@ -1,0 +1,27 @@
+<!doctype html>
+<!--
+  The entry point of the app. Unlike a webpack-style setup, the HTML file itself
+  is the entry: Vite serves it (injecting its HMR client and React's Fast
+  Refresh preamble in dev) and treats the <script type="module"> below as the
+  root of the module graph, following every import from main.tsx outward.
+  `vite build` rewrites the script and stylesheet references to the hashed bundle files.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Council</title>
+    <!-- Inter is the typeface that the reference screenshot's clean look relies on. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap"
+    />
+  </head>
+  <body>
+    <!-- React renders the whole UI into this one element (see main.tsx). -->
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

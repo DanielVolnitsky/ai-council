@@ -1,0 +1,554 @@
+/*
+  One global stylesheet, imported once from main.tsx. Plain CSS keeps the
+  dependency list short. Components refer to these classes by name via
+  `className`, so there's no CSS-in-JS and no build-time CSS framework.
+
+  Colors and sizes are CSS custom properties ("variables") defined on :root.
+  Dark mode only redefines the variables, so no rule below needs a dark variant.
+*/
+:root {
+  --bg: #fafafc;
+  --surface: #ffffff;
+  --surface-sunken: #f6f6f8;
+  --border: #e7e7ec;
+  --text: #0f0f14;
+  --text-muted: #6b6b76;
+  --accent: #8b5cf6;
+  --accent-soft: #ede9fe;
+  --accent-text: #ffffff;
+  /* Darker variants for small text on the soft backgrounds, keeping the WCAG AA 4.5:1 contrast ratio. */
+  --accent-strong: #6d28d9;
+  --badge-bg: #dbeafe;
+  --badge-text: #1d4ed8;
+  --success: #15803d;
+  --success-soft: #dcfce7;
+  --danger: #b91c1c;
+  --danger-soft: #fee2e2;
+  --provider-openai: #0f7a5f;
+  --provider-anthropic: #b4532a;
+  --provider-google: #1a5fd0;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgb(15 15 20 / 0.04), 0 4px 16px rgb(15 15 20 / 0.04);
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d0d11;
+    --surface: #16161c;
+    --surface-sunken: #1c1c23;
+    --border: #2a2a33;
+    --text: #f1f1f4;
+    --text-muted: #9a9aa6;
+    --accent: #a78bfa;
+    --accent-soft: #2e2546;
+    --accent-text: #120d1f;
+    --accent-strong: #c4b5fd;
+    --badge-bg: #1e2a4a;
+    --badge-text: #93b4ff;
+    --success: #4ade80;
+    --success-soft: #14301f;
+    --danger: #f87171;
+    --danger-soft: #3a1717;
+    --provider-openai: #34d1a6;
+    --provider-anthropic: #f0997a;
+    --provider-google: #8ab4f8;
+    --shadow: none;
+  }
+}
+
+/* ---------- Base ---------- */
+
+/* border-box makes width include padding and border, which is what everyone expects. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent-strong);
+}
+
+.muted {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ---------- Page layout ---------- */
+
+/* min() keeps a 16px gutter on phones and caps the content width on desktops. */
+.page {
+  width: min(1120px, 100% - 32px);
+  margin: 0 auto;
+  padding: 12vh 0 64px;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.hero h1 {
+  margin: 0 0 8px;
+  font-size: clamp(28px, 5vw, 36px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hero p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.badge {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--badge-bg);
+  color: var(--badge-text);
+}
+
+/* ---------- Question card ---------- */
+
+.question-card {
+  max-width: 740px;
+  margin: 0 auto;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+/* :focus-within matches while any descendant (the textarea) has focus. */
+.question-card:focus-within {
+  border-color: var(--accent);
+}
+
+.question-input {
+  display: block;
+  width: 100%;
+  padding: 18px 18px 8px;
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.question-input::placeholder {
+  color: var(--text-muted);
+}
+
+.question-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px 12px 18px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.question-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.send-button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border: 0;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-text);
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.send-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.send-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.disclaimer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 10px 0 0;
+}
+
+/* ---------- Round results ---------- */
+
+.round {
+  margin-top: 56px;
+  display: grid;
+  gap: 36px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 0 0 12px;
+}
+
+/*
+  auto-fit with minmax creates as many columns of at least 320px as fit and
+  stretches them to fill the row, so two members sit side by side on a laptop
+  and stack on a phone, with no media query.
+*/
+.member-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-body {
+  padding: 14px 16px 16px;
+  overflow-wrap: anywhere;
+}
+
+.member-error {
+  margin: 0;
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.error-banner {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.session-id {
+  margin: -12px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.session-id a {
+  font-family: var(--font-mono);
+}
+
+/* ---------- Model name and status ---------- */
+
+.model-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.provider-tag {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+/* Attribute selectors give each provider a color without extra classes in TSX. */
+.provider-tag[data-provider="openai"] {
+  color: var(--provider-openai);
+}
+.provider-tag[data-provider="anthropic"] {
+  color: var(--provider-anthropic);
+}
+.provider-tag[data-provider="google"],
+.provider-tag[data-provider="google_genai"] {
+  color: var(--provider-google);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+/* The streaming pill gets a pulsing dot, drawn with ::before so the TSX stays text-only. */
+.status-pill[data-status="streaming"]::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.status-pill[data-status="done"] {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.status-pill[data-status="failed"] {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* ---------- Markdown inside answers ---------- */
+
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
+  font-size: 15px;
+  margin: 1.2em 0 0.4em;
+}
+
+.markdown p,
+.markdown ul,
+.markdown ol {
+  margin: 0.6em 0;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 1.3em;
+}
+
+.markdown code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--surface-sunken);
+}
+
+.markdown pre {
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--surface-sunken);
+  overflow-x: auto;
+}
+
+.markdown pre code {
+  padding: 0;
+  background: none;
+}
+
+/* ---------- Synthesis ---------- */
+
+.synthesis {
+  padding: 8px 24px;
+}
+
+.synthesis-section {
+  padding: 18px 0;
+}
+
+/* `+` targets a section immediately preceded by another, giving dividers only between sections. */
+.synthesis-section + .synthesis-section {
+  border-top: 1px solid var(--border);
+}
+
+.synthesis-section h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.synthesis-section ul,
+.synthesis-section ol {
+  margin: 0;
+  padding-left: 1.3em;
+}
+
+.synthesis-section li + li {
+  margin-top: 4px;
+}
+
+.verdict-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.verdict-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.verdict-card[data-kind="strongest"] {
+  background: var(--success-soft);
+  border-color: transparent;
+}
+
+.verdict-card[data-kind="weakest"] {
+  background: var(--danger-soft);
+  border-color: transparent;
+}
+
+.verdict-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.verdict-justification {
+  margin: 12px 0 0;
+}
+
+/* Prefixed with .synthesis-section so these selectors outrank `.synthesis-section ul`
+   (two classes beat one class plus a tag) without resorting to !important. */
+.synthesis-section .plain-list {
+  list-style: none;
+  padding: 0;
+}
+
+.disagreement {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface-sunken);
+}
+
+.disagreement p {
+  margin: 0 0 8px;
+}
+
+.model-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 4px;
+}
+
+.model-list-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  min-width: 52px;
+}
+
+.insight-group + .insight-group {
+  margin-top: 14px;
+}
+
+.synthesis-section .insight-group ul {
+  margin-top: 6px;
+}
+
+.takeaways li::marker {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.synthesis-pending {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px;
+  color: var(--text-muted);
+}
+
+/* ---------- Animation ---------- */
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* By default the spinner takes currentColor (white on the accent-colored send
+   button). In the pending panel it is tinted with the accent instead. */
+.synthesis-pending .spinner {
+  color: var(--accent);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Respects the OS "reduce motion" setting by stilling every animation. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+  }
+}
