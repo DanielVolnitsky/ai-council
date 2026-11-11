@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "type": "stdio",
+      "command": "sh",
+      "args": [
+        "-c",
+        "set -a; [ -f .env ] && . ./.env; set +a; exec npx -y @playwright/mcp@latest ${PLAYWRIGHT_BROWSER_PATH:+--executable-path \"$PLAYWRIGHT_BROWSER_PATH\"}"
+      ]
+    }
+  }
+}
