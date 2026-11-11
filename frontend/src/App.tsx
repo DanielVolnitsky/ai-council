@@ -47,7 +47,7 @@ function RoundView({ round }: { round: RoundState }) {
         <h2 className="section-title">Council</h2>
         {round.members.length === 0 ? (
           <p className="muted">
-            {round.status === "running" ? "Waiting for the first answer…" : "No answers."}
+            {round.status === "running" ? "Starting the round…" : "No answers."}
           </p>
         ) : (
           <div className="member-grid">
@@ -79,10 +79,8 @@ function RoundView({ round }: { round: RoundState }) {
 function SynthesisSlot({ round }: { round: RoundState }) {
   if (round.synthesis) return <SynthesisView synthesis={round.synthesis} />;
   if (round.status !== "running") return <p className="muted">No synthesis for this round.</p>;
-  // The stream never says how many members a round has, so "synthesizing" is
-  // inferred from every member seen so far having finished. A member that has
-  // not sent its first token yet is invisible here, so the label can show a
-  // moment early.
+  // session_start lists every member up front, so once all of them have
+  // finished, the only work left is the synthesis.
   const synthesizing: boolean =
     round.members.length > 0 && round.members.every((member) => member.status !== "streaming");
   // aria-live="polite" has screen readers read out the label when it changes,

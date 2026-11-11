@@ -41,7 +41,7 @@ export interface CouncilSynthesis {
 // `switch (event.type)` matches "model_token", the compiler narrows `event` to
 // that variant, so `event.token` type-checks only inside that case.
 export type CouncilStreamEvent =
-  | { type: "session_start"; session_id: string }
+  | { type: "session_start"; session_id: string; model_ids: string[] }
   | { type: "model_token"; model_id: string; token: string }
   | { type: "model_done"; model_id: string; response: string; error: string | null }
   | { type: "synth_done"; synthesis: CouncilSynthesis }

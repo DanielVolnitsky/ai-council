@@ -76,6 +76,7 @@ package "core.domain" <<core>> {
 package "core.events" <<core>> {
   class SessionStartEvent <<dataclass>> {
     +session_id: str
+    +model_ids: list[str]
     {static} +event = "session_start"
   }
 

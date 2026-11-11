@@ -28,7 +28,7 @@ export type RoundStatus = "idle" | "running" | "done" | "failed";
 export interface RoundState {
   status: RoundStatus;
   sessionId: string | null;
-  // Kept in arrival order, so panels appear left to right as members start answering.
+  // Seeded from session_start in config order, so every panel shows before its first token.
   members: MemberAnswer[];
   synthesis: CouncilSynthesis | null;
   error: string | null;
@@ -76,7 +76,11 @@ function roundReducer(state: RoundState, action: RoundAction): RoundState {
 function applyStreamEvent(state: RoundState, event: CouncilStreamEvent): RoundState {
   switch (event.type) {
     case "session_start":
-      return { ...state, sessionId: event.session_id };
+      return {
+        ...state,
+        sessionId: event.session_id,
+        members: event.model_ids.map(pendingMember),
+      };
     case "model_token":
       return {
         ...state,
@@ -108,8 +112,12 @@ function applyStreamEvent(state: RoundState, event: CouncilStreamEvent): RoundSt
   }
 }
 
-// Applies `update` to the member with `modelId`, creating it first if this is
-// its first event. A member that fails before streaming anything sends only model_done.
+function pendingMember(modelId: string): MemberAnswer {
+  return { modelId, text: "", status: "streaming", error: null };
+}
+
+// Applies `update` to the member with `modelId`, creating it first if session_start
+// did not list it, so an event for an unannounced member still gets a panel.
 function upsertMember(
   members: MemberAnswer[],
   modelId: string,
@@ -118,7 +126,7 @@ function upsertMember(
   const exists: boolean = members.some((member) => member.modelId === modelId);
   const withMember: MemberAnswer[] = exists
     ? members
-    : [...members, { modelId, text: "", status: "streaming", error: null }];
+    : [...members, pendingMember(modelId)];
   return withMember.map((member) => (member.modelId === modelId ? update(member) : member));
 }
 

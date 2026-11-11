@@ -156,6 +156,7 @@ async def test_stream_council_ends_with_the_synthesis(monkeypatch):
 
     assert isinstance(events[0], SessionStartEvent)
     assert UUID(events[0].session_id)
+    assert events[0].model_ids == ["openai:gpt-4o", "anthropic:claude-sonnet-5"]
     assert events[1:] == FANOUT_EVENTS + [SynthDoneEvent(synthesis=SYNTHESIS)]
 
 
@@ -213,6 +214,7 @@ def test_stream_endpoint_emits_one_sse_message_per_event(client, monkeypatch):
     messages: list[SseMessage] = parse_sse(response.text)
     assert messages[0]["event"] == "session_start"
     assert UUID(messages[0]["data"]["session_id"])
+    assert messages[0]["data"]["model_ids"] == ["openai:gpt-4o", "anthropic:claude-sonnet-5"]
     assert messages[1:] == [
         {"event": "model_token", "data": {"model_id": "openai:gpt-4o", "token": "gpt says yes"}},
         {

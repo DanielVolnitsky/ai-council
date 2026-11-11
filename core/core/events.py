@@ -11,6 +11,7 @@ from core.domain import CouncilSynthesis, ModelResponse
 @dataclass
 class SessionStartEvent:
     session_id: str
+    model_ids: list[str]
     event: ClassVar[str] = "session_start"
 
 

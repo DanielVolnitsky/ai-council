@@ -55,7 +55,7 @@ emits five event types:
 
 | Event | Payload |
 |-------|---------|
-| `session_start` | `{"session_id"}` — always first; the Langfuse session this round is traced under |
+| `session_start` | `{"session_id", "model_ids"}` — always first; the Langfuse session this round is traced under and the enabled members, so a UI can show every panel before its first token |
 | `model_token` | `{"model_id", "token"}` — one per chunk, all members interleaved by arrival |
 | `model_done` | `{"model_id", "response", "error"}` — one per member, `error` set if it failed |
 | `synth_done` | `{"synthesis"}` — the complete `CouncilSynthesis` |

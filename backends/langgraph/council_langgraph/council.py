@@ -42,7 +42,10 @@ async def ask_council_streaming(
     question: str,
 ) -> AsyncIterator[CouncilStreamEvent]:
     session_id: str = new_session_id()
-    yield SessionStartEvent(session_id=session_id)
+    yield SessionStartEvent(
+        session_id=session_id,
+        model_ids=[model_config.id for model_config in config.enabled_models],
+    )
 
     responses: list[ModelResponse] = []
 
