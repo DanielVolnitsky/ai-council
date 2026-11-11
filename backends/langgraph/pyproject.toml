@@ -5,7 +5,7 @@
 #
 # langchain provides init_chat_model (the provider factory used by fanout.py);
 # each provider needs its own integration package alongside it — langchain-openai
-# today, langchain-anthropic / langchain-google-genai / langchain-ollama as those
+# langchain-anthropic and langchain-ollama today, langchain-google-genai as those
 # providers are enabled in config.yaml.
 [build-system]
 requires = ["hatchling"]
@@ -20,6 +20,7 @@ dependencies = [
     "langchain>=1.0",            # init_chat_model — provider-agnostic chat model factory
     "langchain-openai>=1.0",     # OpenAI integration — one integration package per enabled provider
     "langchain-anthropic>=1.0",  # Anthropic integration
+    "langchain-ollama>=1.0",     # Ollama integration — local models, no API key
     "fastapi>=0.115",            # HTTP layer for the council API
     "uvicorn>=0.32",             # ASGI server used to run that app
     "python-dotenv>=1.0",        # Loads .env so API keys reach os.environ without a shell export

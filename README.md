@@ -139,7 +139,7 @@ pulling, or whenever imports fail for a package that is already listed in a
 
 ```bash
 uv run --directory backends/langgraph \
-  python -c "import langchain_anthropic, langchain_openai, council_langgraph.fanout"
+  python -c "import langchain_anthropic, langchain_ollama, langchain_openai, council_langgraph.fanout"
 ```
 
 Cheap import-only smoke test that spends no API credits. `--directory` runs the

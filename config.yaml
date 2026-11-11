@@ -10,7 +10,7 @@ models:
     api_key_env: OPENAI_API_KEY   # Name of the env var that holds the key
     enabled: true
 
-  - id: anthropic:claude-haiku-4-5-20251001   # Cheapest Anthropic model
-    api_key_env: ANTHROPIC_API_KEY
+  - id: ollama:qwen3.8:27b
+    base_url: http://localhost:11434
     enabled: true
 
